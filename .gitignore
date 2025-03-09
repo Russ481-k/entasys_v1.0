@@ -20,12 +20,10 @@ next-env.d.ts
 
 # misc
 .DS_Store
-*.pem
 /.vscode/*
 !/.vscode/extensions.json
 .idea/
 .eslintcache
-.db
 tsconfig.tsbuildinfo
 
 # debug
@@ -33,12 +31,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# local env files
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# environment variables
+.env*
+!.env.example
 
 # vercel
 .vercel
@@ -58,13 +53,17 @@ prisma/dev.db-journal
 /playwright-report/
 /playwright/.cache/
 
-# next-pwa recommandation
+# next-pwa
 **/public/workbox-*.js*
 **/public/sw.js*
 **/public/worker-development.js*
 
-certificates
+# Certificates and security
+certs/
+*.pem
+*-certs.sh
 
+# Logs and backups
 log.txt
-ecosystem.config.js
-
+logstash/pipeline/*.conf
+*.backup

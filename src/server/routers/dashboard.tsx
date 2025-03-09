@@ -22,6 +22,12 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.tz.setDefault('Asia/Seoul');
 
+const domains = [
+  'vision-seoul-fw-seoulfw_1',
+  'vision-seoul-fw-seoulfw_2',
+  'vision-seoul-fw-seoulfw_3',
+];
+
 // 전역 상수
 export const prisma = new PrismaClient();
 // 다운로드 파일 정리 함수
@@ -249,25 +255,6 @@ async function getMemoryUsage(): Promise<number> {
   });
 }
 
-// Function to query the device_name_index
-export const getDomainIndexContents = async (): Promise<string[]> => {
-  try {
-    const result = await makeOpenSearchRequest<{
-      hits: { hits: Array<{ _source: { domains: string[] } }> };
-    }>(`/domain_index/_search`, 'POST', {
-      size: 1000,
-      query: { match_all: {} },
-    });
-    if (result.hits?.hits?.[0]?._source?.domains) {
-      return result.hits.hits[0]._source.domains;
-    }
-    return [];
-  } catch (error) {
-    console.error('Error querying domain_index:', error);
-    return [];
-  }
-};
-
 interface OpenSearchAggregationResponse {
   took: number;
   timed_out: boolean;
@@ -317,7 +304,6 @@ export const dashboardRouter = createTRPCRouter({
   getDomains: protectedProcedure()
     .output(z.object({ domains: z.array(z.string()) }))
     .query(async () => {
-      const domains = await getDomainIndexContents();
       return { domains };
     }),
   // 시스템 메트릭스 조회
@@ -365,7 +351,7 @@ export const dashboardRouter = createTRPCRouter({
       const now = dayjs().tz('Asia/Seoul');
       const thirtySecondsAgo = now.subtract(30, 'second');
       const oneMinuteAgo = thirtySecondsAgo.subtract(60, 'second');
-      const domains = await getDomainIndexContents();
+
       const currentHour = now.format('YYYY.MM.DD.HH');
 
       // 초당 로그 수 계산
@@ -424,7 +410,6 @@ export const dashboardRouter = createTRPCRouter({
 
   getChartMetrics: protectedProcedure().query(async () => {
     const now = dayjs().tz('Asia/Seoul');
-    const domains = await getDomainIndexContents();
 
     // 시간별 데이터 (최근 24시간)
     const hourlyResult =

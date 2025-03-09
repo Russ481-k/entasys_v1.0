@@ -38,35 +38,73 @@ export class SearchSessionService {
     });
   }
   async findBySearchId(searchId) {
+    var _a;
     console.log(`[SearchSession] Finding session by searchId: ${searchId}`);
     const session = await this.prisma.$transaction(
       async (tx) => {
         const result = await tx.searchSession.findUnique({
           where: { searchId },
+          select: {
+            id: true,
+            userId: true,
+            clientIp: true,
+            userAgent: true,
+            searchId: true,
+            status: true,
+            searchParams: true,
+            createdAt: true,
+            updatedAt: true,
+            lastActivityAt: true,
+            cancelReason: true,
+          },
         });
-        console.log(`[SearchSession] Session lookup result in transaction:`, {
-          id: result === null || result === void 0 ? void 0 : result.id,
-          status: result === null || result === void 0 ? void 0 : result.status,
-          searchId:
-            result === null || result === void 0 ? void 0 : result.searchId,
-          lastActivityAt:
-            result === null || result === void 0
-              ? void 0
-              : result.lastActivityAt,
+        if (!result) {
+          console.log(
+            `[SearchSession] No session found for searchId: ${searchId}`
+          );
+          return null;
+        }
+        // 상태가 CANCELLED로 변경되었는지 한번 더 확인
+        const latestStatus = await tx.searchSession.findUnique({
+          where: { id: result.id },
+          select: { status: true },
         });
+        if (
+          (latestStatus === null || latestStatus === void 0
+            ? void 0
+            : latestStatus.status) !== result.status
+        ) {
+          console.log(
+            `[SearchSession] Session status changed during transaction:`,
+            {
+              from: result.status,
+              to:
+                latestStatus === null || latestStatus === void 0
+                  ? void 0
+                  : latestStatus.status,
+            }
+          );
+          return Object.assign(Object.assign({}, result), {
+            status:
+              latestStatus === null || latestStatus === void 0
+                ? void 0
+                : latestStatus.status,
+          });
+        }
         return result;
       },
       {
-        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+        isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
+        maxWait: 2000,
       }
     );
-    if (!session) {
-      console.log(`[SearchSession] No session found for searchId: ${searchId}`);
-      return null;
-    }
-    return Object.assign(Object.assign({}, session), {
-      searchParams: session.searchParams,
-    });
+    return session
+      ? Object.assign(Object.assign({}, session), {
+          searchParams: session.searchParams,
+          status:
+            (_a = session.status) !== null && _a !== void 0 ? _a : 'ERROR',
+        })
+      : null;
   }
   async findActiveByUserId(userId) {
     const sessions = await this.prisma.searchSession.findMany({
@@ -181,7 +219,7 @@ export class SearchSessionService {
         },
         {
           isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-          timeout: 5000, // 5초 타임아웃
+          timeout: 30000, // 30초 타임아웃
         }
       );
     } catch (error) {

@@ -6,31 +6,31 @@ docker network create palolog
 # test
 
 # 현재 인덱스 목록
-curl -X GET "https://localhost:9200/_cat/indices?v&s=index,docs.count:desc&pretty" -u "admin:admin" --insecure
+curl -X GET "http://localhost:9200/_cat/indices?v&s=index,docs.count:desc&pretty" -u "admin:admin" --insecure
 
 # 노드 할당 현황
 curl -XGET 'localhost:9200/_cat/allocation?v' --user admin:admin --insecure
 
-curl -X PUT "https://localhost:9200/2025.02.01.15_vision-seoul-fw-seoulfw_3" -u "admin:admin" --insecure -H "Content-Type: application/json" -d '{"settings": {"number_of_shards": 1, "number_of_replicas": 1}}'
-curl -X PUT "https://localhost:9200/2025.02.01.15_vision-seoul-fw-seoulfw_2" -u "admin:admin" --insecure -H "Content-Type: application/json" -d '{"settings": {"number_of_shards": 1, "number_of_replicas": 1}}'
-curl -X PUT "https://localhost:9200/2025.02.01.15_vision-seoul-fw-seoulfw_1" -u "admin:admin" --insecure -H "Content-Type: application/json" -d '{"settings": {"number_of_shards": 1, "number_of_replicas": 1}}'
-curl -X PUT "https://localhost:9200/2025.02.01.14_vision-seoul-fw-seoulfw_3" -u "admin:admin" --insecure -H "Content-Type: application/json" -d '{"settings": {"number_of_shards": 1, "number_of_replicas": 1}}'
-curl -X PUT "https://localhost:9200/2025.02.01.14_vision-seoul-fw-seoulfw_2" -u "admin:admin" --insecure -H "Content-Type: application/json" -d '{"settings": {"number_of_shards": 1, "number_of_replicas": 1}}'
-curl -X PUT "https://localhost:9200/2025.02.01.14_vision-seoul-fw-seoulfw_1" -u "admin:admin" --insecure -H "Content-Type: application/json" -d '{"settings": {"number_of_shards": 1, "number_of_replicas": 1}}'
-curl -X PUT "https://localhost:9200/2025.02.01.13_vision-seoul-fw-seoulfw_3" -u "admin:admin" --insecure -H "Content-Type: application/json" -d '{"settings": {"number_of_shards": 1, "number_of_replicas": 1}}'
-curl -X PUT "https://localhost:9200/2025.02.01.13_vision-seoul-fw-seoulfw_2" -u "admin:admin" --insecure -H "Content-Type: application/json" -d '{"settings": {"number_of_shards": 1, "number_of_replicas": 1}}'
-curl -X PUT "https://localhost:9200/2025.02.01.13_vision-seoul-fw-seoulfw_1" -u "admin:admin" --insecure -H "Content-Type: application/json" -d '{"settings": {"number_of_shards": 1, "number_of_replicas": 1}}'
-curl -X PUT "https://localhost:9200/2025.02.01.12_vision-seoul-fw-seoulfw_3" -u "admin:admin" --insecure -H "Content-Type: application/json" -d '{"settings": {"number_of_shards": 1, "number_of_replicas": 1}}'
-curl -X PUT "https://localhost:9200/2025.02.01.12_vision-seoul-fw-seoulfw_2" -u "admin:admin" --insecure -H "Content-Type: application/json" -d '{"settings": {"number_of_shards": 1, "number_of_replicas": 1}}'
-curl -X PUT "https://localhost:9200/2025.02.01.12_vision-seoul-fw-seoulfw_1" -u "admin:admin" --insecure -H "Content-Type: application/json" -d '{"settings": {"number_of_shards": 1, "number_of_replicas": 1}}'
-curl -X PUT "https://localhost:9200/2025.02.01.11_vision-seoul-fw-seoulfw_3" -u "admin:admin" --insecure -H "Content-Type: application/json" -d '{"settings": {"number_of_shards": 1, "number_of_replicas": 1}}'
-curl -X PUT "https://localhost:9200/2025.02.01.11_vision-seoul-fw-seoulfw_2" -u "admin:admin" --insecure -H "Content-Type: application/json" -d '{"settings": {"number_of_shards": 1, "number_of_replicas": 1}}'
-curl -X PUT "https://localhost:9200/2025.02.01.11_vision-seoul-fw-seoulfw_1" -u "admin:admin" --insecure -H "Content-Type: application/json" -d '{"settings": {"number_of_shards": 1, "number_of_replicas": 1}}'
-curl -X PUT "https://localhost:9200/2025.02.01.10_vision-seoul-fw-seoulfw_3" -u "admin:admin" --insecure -H "Content-Type: application/json" -d '{"settings": {"number_of_shards": 1, "number_of_replicas": 1}}'
-curl -X PUT "https://localhost:9200/2025.02.01.10_vision-seoul-fw-seoulfw_2" -u "admin:admin" --insecure -H "Content-Type: application/json" -d '{"settings": {"number_of_shards": 1, "number_of_replicas": 1}}'
-curl -X PUT "https://localhost:9200/2025.02.01.10_vision-seoul-fw-seoulfw_1" -u "admin:admin" --insecure -H "Content-Type: application/json" -d '{"settings": {"number_of_shards": 1, "number_of_replicas": 1}}'
+curl -X PUT "http://localhost:9200/2025.02.01.15_vision-seoul-fw-seoulfw_3" -u "admin:admin" --insecure -H "Content-Type: application/json" -d '{"settings": {"number_of_shards": 1, "number_of_replicas": 1}}'
+curl -X PUT "http://localhost:9200/2025.02.01.15_vision-seoul-fw-seoulfw_2" -u "admin:admin" --insecure -H "Content-Type: application/json" -d '{"settings": {"number_of_shards": 1, "number_of_replicas": 1}}'
+curl -X PUT "http://localhost:9200/2025.02.01.15_vision-seoul-fw-seoulfw_1" -u "admin:admin" --insecure -H "Content-Type: application/json" -d '{"settings": {"number_of_shards": 1, "number_of_replicas": 1}}'
+curl -X PUT "http://localhost:9200/2025.02.01.14_vision-seoul-fw-seoulfw_3" -u "admin:admin" --insecure -H "Content-Type: application/json" -d '{"settings": {"number_of_shards": 1, "number_of_replicas": 1}}'
+curl -X PUT "http://localhost:9200/2025.02.01.14_vision-seoul-fw-seoulfw_2" -u "admin:admin" --insecure -H "Content-Type: application/json" -d '{"settings": {"number_of_shards": 1, "number_of_replicas": 1}}'
+curl -X PUT "http://localhost:9200/2025.02.01.14_vision-seoul-fw-seoulfw_1" -u "admin:admin" --insecure -H "Content-Type: application/json" -d '{"settings": {"number_of_shards": 1, "number_of_replicas": 1}}'
+curl -X PUT "http://localhost:9200/2025.02.01.13_vision-seoul-fw-seoulfw_3" -u "admin:admin" --insecure -H "Content-Type: application/json" -d '{"settings": {"number_of_shards": 1, "number_of_replicas": 1}}'
+curl -X PUT "http://localhost:9200/2025.02.01.13_vision-seoul-fw-seoulfw_2" -u "admin:admin" --insecure -H "Content-Type: application/json" -d '{"settings": {"number_of_shards": 1, "number_of_replicas": 1}}'
+curl -X PUT "http://localhost:9200/2025.02.01.13_vision-seoul-fw-seoulfw_1" -u "admin:admin" --insecure -H "Content-Type: application/json" -d '{"settings": {"number_of_shards": 1, "number_of_replicas": 1}}'
+curl -X PUT "http://localhost:9200/2025.02.01.12_vision-seoul-fw-seoulfw_3" -u "admin:admin" --insecure -H "Content-Type: application/json" -d '{"settings": {"number_of_shards": 1, "number_of_replicas": 1}}'
+curl -X PUT "http://localhost:9200/2025.02.01.12_vision-seoul-fw-seoulfw_2" -u "admin:admin" --insecure -H "Content-Type: application/json" -d '{"settings": {"number_of_shards": 1, "number_of_replicas": 1}}'
+curl -X PUT "http://localhost:9200/2025.02.01.12_vision-seoul-fw-seoulfw_1" -u "admin:admin" --insecure -H "Content-Type: application/json" -d '{"settings": {"number_of_shards": 1, "number_of_replicas": 1}}'
+curl -X PUT "http://localhost:9200/2025.02.01.11_vision-seoul-fw-seoulfw_3" -u "admin:admin" --insecure -H "Content-Type: application/json" -d '{"settings": {"number_of_shards": 1, "number_of_replicas": 1}}'
+curl -X PUT "http://localhost:9200/2025.02.01.11_vision-seoul-fw-seoulfw_2" -u "admin:admin" --insecure -H "Content-Type: application/json" -d '{"settings": {"number_of_shards": 1, "number_of_replicas": 1}}'
+curl -X PUT "http://localhost:9200/2025.02.01.11_vision-seoul-fw-seoulfw_1" -u "admin:admin" --insecure -H "Content-Type: application/json" -d '{"settings": {"number_of_shards": 1, "number_of_replicas": 1}}'
+curl -X PUT "http://localhost:9200/2025.02.01.10_vision-seoul-fw-seoulfw_3" -u "admin:admin" --insecure -H "Content-Type: application/json" -d '{"settings": {"number_of_shards": 1, "number_of_replicas": 1}}'
+curl -X PUT "http://localhost:9200/2025.02.01.10_vision-seoul-fw-seoulfw_2" -u "admin:admin" --insecure -H "Content-Type: application/json" -d '{"settings": {"number_of_shards": 1, "number_of_replicas": 1}}'
+curl -X PUT "http://localhost:9200/2025.02.01.10_vision-seoul-fw-seoulfw_1" -u "admin:admin" --insecure -H "Content-Type: application/json" -d '{"settings": {"number_of_shards": 1, "number_of_replicas": 1}}'
 
-curl -X POST "https://localhost:9200/_reindex" \
+curl -X POST "http://localhost:9200/_reindex" \
 -u "admin:admin" --insecure \
 -H "Content-Type: application/json" \
 -d '{
@@ -41,7 +41,7 @@ curl -X POST "https://localhost:9200/_reindex" \
     "index": "2025.02.01.15_vision-seoul-fw-seoulfw_3"
   }
 }'
-curl -X POST "https://localhost:9200/_reindex" \
+curl -X POST "http://localhost:9200/_reindex" \
 -u "admin:admin" --insecure \
 -H "Content-Type: application/json" \
 -d '{
@@ -52,7 +52,7 @@ curl -X POST "https://localhost:9200/_reindex" \
     "index": "2025.02.01.15_vision-seoul-fw-seoulfw_2"
   }
 }'
-curl -X POST "https://localhost:9200/_reindex" \
+curl -X POST "http://localhost:9200/_reindex" \
 -u "admin:admin" --insecure \
 -H "Content-Type: application/json" \
 -d '{
@@ -63,7 +63,7 @@ curl -X POST "https://localhost:9200/_reindex" \
     "index": "2025.02.01.15_vision-seoul-fw-seoulfw_1"
   }
 }'
-curl -X POST "https://localhost:9200/_reindex" \
+curl -X POST "http://localhost:9200/_reindex" \
 -u "admin:admin" --insecure \
 -H "Content-Type: application/json" \
 -d '{
@@ -74,7 +74,7 @@ curl -X POST "https://localhost:9200/_reindex" \
     "index": "2025.02.01.14_vision-seoul-fw-seoulfw_3"
   }
 }'
-curl -X POST "https://localhost:9200/_reindex" \
+curl -X POST "http://localhost:9200/_reindex" \
 -u "admin:admin" --insecure \
 -H "Content-Type: application/json" \
 -d '{
@@ -85,7 +85,7 @@ curl -X POST "https://localhost:9200/_reindex" \
     "index": "2025.02.01.14_vision-seoul-fw-seoulfw_2"
   }
 }'
-curl -X POST "https://localhost:9200/_reindex" \
+curl -X POST "http://localhost:9200/_reindex" \
 -u "admin:admin" --insecure \
 -H "Content-Type: application/json" \
 -d '{
@@ -96,7 +96,7 @@ curl -X POST "https://localhost:9200/_reindex" \
     "index": "2025.02.01.14_vision-seoul-fw-seoulfw_1"
   }
 }'
-curl -X POST "https://localhost:9200/_reindex" \
+curl -X POST "http://localhost:9200/_reindex" \
 -u "admin:admin" --insecure \
 -H "Content-Type: application/json" \
 -d '{
@@ -107,7 +107,7 @@ curl -X POST "https://localhost:9200/_reindex" \
     "index": "2025.02.01.13_vision-seoul-fw-seoulfw_3"
   }
 }'
-curl -X POST "https://localhost:9200/_reindex" \
+curl -X POST "http://localhost:9200/_reindex" \
 -u "admin:admin" --insecure \
 -H "Content-Type: application/json" \
 -d '{
@@ -118,7 +118,7 @@ curl -X POST "https://localhost:9200/_reindex" \
     "index": "2025.02.01.13_vision-seoul-fw-seoulfw_2"
   }
 }'
-curl -X POST "https://localhost:9200/_reindex" \
+curl -X POST "http://localhost:9200/_reindex" \
 -u "admin:admin" --insecure \
 -H "Content-Type: application/json" \
 -d '{
@@ -129,7 +129,7 @@ curl -X POST "https://localhost:9200/_reindex" \
     "index": "2025.02.01.13_vision-seoul-fw-seoulfw_1"
   }
 }'
-curl -X POST "https://localhost:9200/_reindex" \
+curl -X POST "http://localhost:9200/_reindex" \
 -u "admin:admin" --insecure \
 -H "Content-Type: application/json" \
 -d '{
@@ -140,7 +140,7 @@ curl -X POST "https://localhost:9200/_reindex" \
     "index": "2025.02.01.12_vision-seoul-fw-seoulfw_3"
   }
 }'
-curl -X POST "https://localhost:9200/_reindex" \
+curl -X POST "http://localhost:9200/_reindex" \
 -u "admin:admin" --insecure \
 -H "Content-Type: application/json" \
 -d '{
@@ -151,7 +151,7 @@ curl -X POST "https://localhost:9200/_reindex" \
     "index": "2025.02.01.12_vision-seoul-fw-seoulfw_2"
   }
 }'
-curl -X POST "https://localhost:9200/_reindex" \
+curl -X POST "http://localhost:9200/_reindex" \
 -u "admin:admin" --insecure \
 -H "Content-Type: application/json" \
 -d '{
@@ -162,7 +162,7 @@ curl -X POST "https://localhost:9200/_reindex" \
     "index": "2025.02.01.12_vision-seoul-fw-seoulfw_1"
   }
 }'
-curl -X POST "https://localhost:9200/_reindex" \
+curl -X POST "http://localhost:9200/_reindex" \
 -u "admin:admin" --insecure \
 -H "Content-Type: application/json" \
 -d '{
@@ -173,7 +173,7 @@ curl -X POST "https://localhost:9200/_reindex" \
     "index": "2025.02.01.11_vision-seoul-fw-seoulfw_3"
   }
 }'
-curl -X POST "https://localhost:9200/_reindex" \
+curl -X POST "http://localhost:9200/_reindex" \
 -u "admin:admin" --insecure \
 -H "Content-Type: application/json" \
 -d '{
@@ -184,7 +184,7 @@ curl -X POST "https://localhost:9200/_reindex" \
     "index": "2025.02.01.11_vision-seoul-fw-seoulfw_2"
   }
 }'
-curl -X POST "https://localhost:9200/_reindex" \
+curl -X POST "http://localhost:9200/_reindex" \
 -u "admin:admin" --insecure \
 -H "Content-Type: application/json" \
 -d '{
@@ -195,7 +195,7 @@ curl -X POST "https://localhost:9200/_reindex" \
     "index": "2025.02.01.11_vision-seoul-fw-seoulfw_1"
   }
 }'
-curl -X POST "https://localhost:9200/_reindex" \
+curl -X POST "http://localhost:9200/_reindex" \
 -u "admin:admin" --insecure \
 -H "Content-Type: application/json" \
 -d '{
@@ -206,7 +206,7 @@ curl -X POST "https://localhost:9200/_reindex" \
     "index": "2025.02.01.10_vision-seoul-fw-seoulfw_3"
   }
 }'
-curl -X POST "https://localhost:9200/_reindex" \
+curl -X POST "http://localhost:9200/_reindex" \
 -u "admin:admin" --insecure \
 -H "Content-Type: application/json" \
 -d '{
@@ -217,7 +217,7 @@ curl -X POST "https://localhost:9200/_reindex" \
     "index": "2025.02.01.10_vision-seoul-fw-seoulfw_2"
   }
 }'
-curl -X POST "https://localhost:9200/_reindex" \
+curl -X POST "http://localhost:9200/_reindex" \
 -u "admin:admin" --insecure \
 -H "Content-Type: application/json" \
 -d '{
@@ -238,12 +238,12 @@ curl -X POST "https://localhost:9200/_reindex" \
 
 
 # 현제 사용 용량
-curl -X GET "https://localhost:9200/_cat/allocation?v&pretty" -u "admin:admin" --insecure
+curl -X GET "http://localhost:9200/_cat/allocation?v&pretty" -u "admin:admin" --insecure
 
 
 # 최근 10개 데이터 출력
 
-curl -X GET "https://localhost:9200/domain_index/_search?pretty" \
+curl -X GET "http://localhost:9200/domain_index/_search?pretty" \
 -H 'Content-Type: application/json' \
 -d '{
   "size": 10,

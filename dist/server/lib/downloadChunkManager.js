@@ -122,80 +122,97 @@ export class DownloadChunkManager {
     }
   }
   async getTotalCount() {
-    var _a, _b;
-    const client = OpenSearchClient.getInstance();
-    const timeFrom = dayjs(this.searchParams.timeFrom)
-      .tz('Asia/Seoul')
-      .format();
-    const timeTo = dayjs(this.searchParams.timeTo).tz('Asia/Seoul').format();
-    const countQuery = {
-      track_total_hits: true,
-      query: {
-        bool: {
-          must: [
-            {
-              range: {
-                '@timestamp': {
-                  gte: timeFrom,
-                  lte: timeTo,
-                  format: 'strict_date_time',
-                  time_zone: '+09:00',
+    var _a;
+    try {
+      const client = OpenSearchClient.getInstance();
+      const timeFrom = dayjs(this.searchParams.timeFrom)
+        .subtract(9, 'hour')
+        .format('YYYY-MM-DDTHH:mm:ss.SSS[Z]');
+      const timeTo = dayjs(this.searchParams.timeTo)
+        .subtract(9, 'hour')
+        .format('YYYY-MM-DDTHH:mm:ss.SSS[Z]');
+      const countQuery = {
+        track_total_hits: true,
+        query: {
+          bool: {
+            must: [
+              {
+                range: {
+                  '@timestamp': {
+                    gte: timeFrom,
+                    lte: timeTo,
+                    format: 'strict_date_time',
+                  },
                 },
               },
-            },
-            {
-              match: {
-                logType: this.searchParams.menu,
+              {
+                match: {
+                  logType: this.searchParams.menu,
+                },
               },
-            },
-            {
-              exists: {
-                field: 'message',
+              {
+                exists: {
+                  field: 'message',
+                },
               },
-            },
-          ],
+            ],
+          },
         },
-      },
-      _source: false,
-      size: 0,
-    };
-    console.log('[DownloadChunkManager] Executing OpenSearch count query:', {
-      query: countQuery,
-      searchParams: this.searchParams,
-      downloadId: this.downloadId,
-      timestamp: new Date().toISOString(),
-    });
-    try {
+        _source: false,
+        size: 0,
+      };
+      console.log('[DownloadChunkManager] Executing OpenSearch count query:', {
+        query: countQuery,
+        searchParams: this.searchParams,
+        downloadId: this.downloadId,
+        timestamp: new Date().toISOString(),
+      });
       const response = await client.request({
         path: '/_search',
         method: 'POST',
         body: countQuery,
       });
       console.log('[DownloadChunkManager] OpenSearch count response:', {
-        response,
+        response: JSON.stringify(response, null, 2),
         downloadId: this.downloadId,
         timestamp: new Date().toISOString(),
       });
-      if (
-        !((_b =
-          (_a = response.hits) === null || _a === void 0
-            ? void 0
-            : _a.total) === null || _b === void 0
+      const total =
+        (_a =
+          response === null || response === void 0 ? void 0 : response.hits) ===
+          null || _a === void 0
           ? void 0
-          : _b.value)
-      ) {
+          : _a.total;
+      if (!total) {
+        console.error('[DownloadChunkManager] Invalid OpenSearch response:', {
+          response: JSON.stringify(response, null, 2),
+          downloadId: this.downloadId,
+          timestamp: new Date().toISOString(),
+        });
         throw new Error(
           'Invalid response from OpenSearch: missing total hits value'
         );
       }
-      return response.hits.total.value;
+      const count =
+        typeof total === 'object' && 'value' in total ? total.value : total;
+      if (typeof count !== 'number') {
+        console.error('[DownloadChunkManager] Invalid total count value:', {
+          total,
+          count,
+          response: JSON.stringify(response, null, 2),
+          timestamp: new Date().toISOString(),
+        });
+        throw new Error(
+          'Invalid response from OpenSearch: total hits value is not a number'
+        );
+      }
+      return count;
     } catch (error) {
       console.error(
         '[DownloadChunkManager] Failed to get total count from OpenSearch:',
         {
           error: error instanceof Error ? error.message : String(error),
           stack: error instanceof Error ? error.stack : undefined,
-          query: countQuery,
           searchParams: this.searchParams,
           downloadId: this.downloadId,
           timestamp: new Date().toISOString(),
@@ -223,10 +240,6 @@ export class DownloadChunkManager {
       });
       // Update status to generating
       chunk.status = 'generating';
-      console.log('[DownloadChunkManager] Updated updateProgress 1:', {
-        fileName: chunk.fileName,
-        timestamp: new Date().toISOString(),
-      });
       this.updateProgress(chunk, 0);
       const downloadDir = join(process.cwd(), 'downloads');
       await fs.promises.mkdir(downloadDir, { recursive: true }).catch((err) => {
@@ -234,8 +247,12 @@ export class DownloadChunkManager {
         throw new Error(`Failed to create download directory: ${errorMessage}`);
       });
       const client = OpenSearchClient.getInstance();
-      const timeFrom = dayjs(searchParams.timeFrom).tz('Asia/Seoul').format();
-      const timeTo = dayjs(searchParams.timeTo).tz('Asia/Seoul').format();
+      const timeFrom = dayjs(searchParams.timeFrom)
+        .subtract(9, 'hour')
+        .format('YYYY-MM-DDTHH:mm:ss.SSS[Z]');
+      const timeTo = dayjs(searchParams.timeTo)
+        .subtract(9, 'hour')
+        .format('YYYY-MM-DDTHH:mm:ss.SSS[Z]');
       // Get current version and column names
       const currentVersion = getCurrentVersion();
       const allColumnNames = getColumnNames(currentVersion);
@@ -267,7 +284,6 @@ export class DownloadChunkManager {
                         gte: timeFrom,
                         lte: timeTo,
                         format: 'strict_date_time',
-                        time_zone: '+09:00',
                       },
                     },
                   },
@@ -356,10 +372,6 @@ export class DownloadChunkManager {
             }
           }
         }
-        console.log('[DownloadChunkManager] Updated updateProgress 2:', {
-          fileName: chunk.fileName,
-          timestamp: new Date().toISOString(),
-        });
         // Update progress
         this.updateProgress(chunk, processedRows);
         // Break if we've reached the chunk's limit
@@ -386,11 +398,6 @@ export class DownloadChunkManager {
       chunk.status = 'ready';
       chunk.progress = 100;
       chunk.processedRows = chunk.totalRows;
-      console.log('[DownloadChunkManager] Updated updateProgress 3:', {
-        fileName: chunk.fileName,
-        timestamp: new Date().toISOString(),
-      });
-      this.updateProgress(chunk, chunk.totalRows);
       console.log('[DownloadChunkManager] File ready:', {
         fileName,
         downloadId: this.downloadId,
@@ -424,22 +431,12 @@ export class DownloadChunkManager {
       if (chunk) {
         chunk.status = 'failed';
         chunk.message = error instanceof Error ? error.message : String(error);
-        console.log('[DownloadChunkManager] Updated updateProgress 4:', {
-          fileName: chunk.fileName,
-          timestamp: new Date().toISOString(),
-        });
         this.updateProgress(chunk, chunk.processedRows);
       }
       throw error;
     }
   }
   updateProgress(chunk, processedRows) {
-    // console.log('======[DownloadChunkManager] updateProgress======:', {
-    //   chunk,
-    //   fileName: chunk.fileName,
-    //   processedRows,
-    //   timestamp: new Date().toISOString(),
-    // });
     const now = new Date();
     const elapsedTime = (now.getTime() - chunk.startTime.getTime()) / 1000; // in seconds
     const processingSpeed = processedRows / elapsedTime; // rows per second
@@ -470,15 +467,7 @@ export class DownloadChunkManager {
       message: chunk.message,
       timestamp: new Date().toISOString(),
     };
-    console.log('[DownloadChunkManager] Emitting progress_update event:', {
-      // ...progressMessage,
-      // sizeInMB: (chunk.size / (1024 * 1024)).toFixed(2) + ' MB',
-      // timeRange:
-      //   chunk.firstReceiveTime && chunk.lastReceiveTime
-      //     ? `${new Date(chunk.firstReceiveTime).toLocaleTimeString()} ~ ${new Date(chunk.lastReceiveTime).toLocaleTimeString()}`
-      //     : 'Not available',
-      // timestamp: new Date().toISOString(),
-    });
+    console.log('[DownloadChunkManager] Emitting progress_update event:', {});
     this.eventEmitter.emit('progress_update', progressMessage);
   }
   getProgress() {

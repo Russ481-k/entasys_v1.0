@@ -10,23 +10,23 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '8'
-          memory: '24G'
+          cpus: '4'
+          memory: '8G'
         reservations:
-          cpus: '6'
-          memory: '16G'
+          cpus: '2'
+          memory: '4G'
     command:
       - 'postgres'
       - '-c'
-      - 'max_connections=2000'
+      - 'max_connections=1000'
       - '-c'
-      - 'shared_buffers=6GB'
+      - 'shared_buffers=2GB'
       - '-c'
-      - 'effective_cache_size=16GB'
+      - 'effective_cache_size=6GB'
       - '-c'
-      - 'maintenance_work_mem=1GB'
+      - 'maintenance_work_mem=512MB'
       - '-c'
-      - 'work_mem=32MB'
+      - 'work_mem=16MB'
       - '-c'
       - 'wal_buffers=16MB'
       - '-c'
@@ -38,11 +38,11 @@ services:
       - '-c'
       - 'synchronous_commit=off'
       - '-c'
-      - 'max_wal_size=4GB'
+      - 'max_wal_size=2GB'
       - '-c'
-      - 'min_wal_size=2GB'
+      - 'min_wal_size=1GB'
       - '-c'
-      - 'autovacuum_max_workers=4'
+      - 'autovacuum_max_workers=3'
     ulimits:
       memlock:
         soft: -1
@@ -50,10 +50,10 @@ services:
       nofile:
         soft: 65536
         hard: 65536
-    shm_size: '4gb'
+    shm_size: '2gb'
 
   opensearch:
-    image: opensearchproject/opensearch:1.2.0
+    image: opensearchproject/opensearch:2.13.0
     container_name: opensearch
     networks:
       - palolog
@@ -62,23 +62,24 @@ services:
       - '9600:9600'
     environment:
       - discovery.type=single-node
-      - 'OPENSEARCH_JAVA_OPTS=-Xms42g -Xmx42g'
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=PaloLog2024!@#$
+      - plugins.security.disabled=true
+      - 'OPENSEARCH_JAVA_OPTS=-Xms12g -Xmx12g'
+      - bootstrap.memory_lock=true
       - TZ=Asia/Seoul
-      - 'search.max_open_scroll_context=2000'
+      - 'search.max_open_scroll_context=1000'
       - 'indices.memory.index_buffer_size=20%'
       - 'indices.queries.cache.size=15%'
-      - 'thread_pool.write.queue_size=2000'
-      - 'thread_pool.search.queue_size=2000'
-      - 'indices.fielddata.cache.size=25%'
-      - 'indices.recovery.max_bytes_per_sec=200mb'
-    deploy:
-      resources:
-        limits:
-          cpus: '12'
-          memory: '50G'
-        reservations:
-          cpus: '8'
-          memory: '28G'
+      - 'thread_pool.write.queue_size=1000'
+      - 'thread_pool.search.queue_size=1000'
+      - 'indices.fielddata.cache.size=20%'
+      - 'indices.recovery.max_bytes_per_sec=100mb'
+      - 'cluster.routing.allocation.disk.threshold_enabled=false'
+      - 'action.auto_create_index=true'
+      - 'action.destructive_requires_name=false'
+    volumes:
+      - opensearch-data:/usr/share/opensearch/data
+      - ./certs:/usr/share/opensearch/config/certs
     ulimits:
       memlock:
         soft: -1
@@ -87,46 +88,51 @@ services:
         soft: 65536
         hard: 65536
     healthcheck:
-      test: ['CMD', 'curl', '-s', '-k', 'https://localhost:9200']
+      test:
+        [
+          'CMD-SHELL',
+          'curl -k -s http://localhost:9200/_cluster/health || exit 1',
+        ]
       interval: 30s
-      timeout: 10s
+      timeout: 30s
       retries: 3
-    shm_size: '2gb'
+      start_period: 40s
+    shm_size: '1gb'
 
   logstash:
-    image: opensearchproject/logstash-oss-with-opensearch-output-plugin:7.16.2
+    image: opensearchproject/logstash-oss-with-opensearch-output-plugin:8.9.0
     container_name: logstash
     networks:
       - palolog
     ports:
       - '514:514/udp'
     environment:
-      LS_JAVA_OPTS: '-Xms32g -Xmx32g'
-      pipeline.batch.size: '100000'
-      pipeline.workers: '48' # CPU 코어 수에 따라 조정
+      LS_JAVA_OPTS: '-Xms8g -Xmx8g'
+      pipeline.batch.size: '50000'
+      pipeline.workers: '12'
       pipeline.batch.delay: '3'
-      pipeline.io_threads: '24' # 증가
+      pipeline.io_threads: '6'
       pipeline.ordered: 'false'
       pipeline.unsafe_shutdown: 'true'
       pipeline.ecs_compatibility: disabled
       queue.type: memory
-      queue.max_bytes: '60gb' # 감소
-      queue.checkpoint.writes: '100000' # 감소
-      queue.checkpoint.acks: '100000' # 감소
+      queue.max_bytes: '16gb'
+      queue.checkpoint.writes: '50000'
+      queue.checkpoint.acks: '50000'
       queue.checkpoint.interval: '1000'
-      queue.page_capacity: '1gb' # 감소
-      queue.max_pages: 16 # 감소
-      queue.max_events: '100000' # int 범위 내로 조정
+      queue.page_capacity: '512mb'
+      queue.max_pages: 8
+      queue.max_events: '50000'
       queue.drain: 'true'
       TZ: Asia/Seoul
     deploy:
       resources:
         limits:
-          cpus: '20' # 32코어의 75%
-          memory: '60G' # 전체 메모리의 ~64%
+          cpus: '6'
+          memory: '12G'
         reservations:
-          cpus: '10'
-          memory: '24G'
+          cpus: '4'
+          memory: '8G'
     volumes:
       - ./logstash/pipeline:/usr/share/logstash/pipeline
     command: logstash -f /usr/share/logstash/pipeline/logstash.conf --config.reload.automatic
@@ -140,8 +146,11 @@ services:
       nproc:
         soft: 65535
         hard: 65535
-    shm_size: '4gb'
+    shm_size: '2gb'
 
 networks:
   palolog:
     driver: bridge
+
+volumes:
+  opensearch-data:

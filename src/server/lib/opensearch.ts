@@ -1,5 +1,4 @@
-import * as fs from 'fs';
-import * as https from 'https';
+import * as http from 'http';
 
 import { env } from '@/env.mjs';
 import { prisma } from '@/server/config/prisma';
@@ -73,18 +72,17 @@ export interface ScrollResponse {
 
 export class OpenSearchClient {
   private static instance: OpenSearchClient;
-  private readonly baseOptions: https.RequestOptions;
+  private readonly baseOptions: http.RequestOptions;
   private searchSessionService: SearchSessionService;
   private activeScrolls: Map<string, string>; // sessionId -> scrollId 매핑
 
   private constructor() {
-    const opensearchUrl = env.OPENSEARCH_URL.replace('https://', '');
     const opensearchPort = Number(env.OPENSEARCH_PORT);
     const opensearchUsername = env.OPENSEARCH_USERNAME;
     const opensearchPassword = env.OPENSEARCH_PASSWORD;
 
     this.baseOptions = {
-      hostname: opensearchUrl,
+      hostname: env.OPENSEARCH_URL.replace(/^https?:\/\//, ''),
       port: opensearchPort,
       headers: {
         'Content-Type': 'application/json',
@@ -94,10 +92,6 @@ export class OpenSearchClient {
             'base64'
           ),
       },
-      ca: fs.existsSync(env.CA_CERT_PATH)
-        ? fs.readFileSync(env.CA_CERT_PATH)
-        : undefined,
-      rejectUnauthorized: false,
     };
 
     this.searchSessionService = new SearchSessionService(prisma);
@@ -123,29 +117,32 @@ export class OpenSearchClient {
   }
 
   async request<T>({ path, method, body }: OpenSearchOptions): Promise<T> {
-    const options: https.RequestOptions = {
+    const options: http.RequestOptions = {
       ...this.baseOptions,
       path,
       method,
     };
 
     return new Promise((resolve, reject) => {
-      console.log('Making OpenSearch request:', {
-        path,
+      console.log('[OpenSearch] Request details:', {
+        url: `http://${options.hostname}:${options.port}${path}`,
         method,
-        hostname: options.hostname,
-        port: options.port,
-        searchId: (body as { scroll_id?: string })?.scroll_id || 'N/A',
+        headers: options.headers,
+        body: JSON.stringify(body, null, 2),
       });
 
-      const req = https.request(options, (res) => {
+      const req = http.request(options, (res) => {
         let data = '';
-        res.on('data', (chunk) => (data += chunk));
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
+
         res.on('end', () => {
           try {
             if (res.statusCode && res.statusCode >= 400) {
-              console.error('OpenSearch request failed:', {
+              console.error('[OpenSearch] Request failed:', {
                 statusCode: res.statusCode,
+                statusMessage: res.statusMessage,
                 data,
               });
               reject(
@@ -158,14 +155,18 @@ export class OpenSearchClient {
             const parsedData = JSON.parse(data);
             resolve(parsedData);
           } catch (e) {
-            console.error('Failed to parse OpenSearch response:', e);
+            console.error('[OpenSearch] Failed to parse response:', e);
+            console.error('[OpenSearch] Raw data that failed to parse:', data);
             reject(new Error(`Failed to parse OpenSearch response: ${e}`));
           }
         });
       });
 
       req.on('error', (e) => {
-        console.error('OpenSearch request error:', e);
+        console.error('[OpenSearch] Network error:', {
+          message: e.message,
+          stack: e.stack,
+        });
         reject(new Error(`OpenSearch request failed: ${e.message}`));
       });
 
@@ -432,7 +433,7 @@ export async function makeOpenSearchRequest<T>(
   body?: object
 ): Promise<T> {
   const options: OpenSearchOptions = {
-    hostname: env.OPENSEARCH_URL.replace('https://', ''),
+    hostname: env.OPENSEARCH_URL.replace(/^http?:\/\//, ''),
     port: Number(env.OPENSEARCH_PORT),
     path,
     method,
@@ -440,12 +441,10 @@ export async function makeOpenSearchRequest<T>(
       'Content-Type': 'application/json',
       Authorization: 'Basic ' + Buffer.from('admin:admin').toString('base64'),
     },
-    rejectUnauthorized: false,
-    timeout: 30000,
   };
 
   return new Promise((resolve, reject) => {
-    const req = https.request(options, (res) => {
+    const req = http.request(options, (res) => {
       let data = '';
       res.on('data', (chunk) => {
         data += chunk;

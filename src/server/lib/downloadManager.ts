@@ -386,8 +386,14 @@ export class DownloadManager {
   async getActualCount(searchParams: SearchParams): Promise<number> {
     try {
       const client = OpenSearchClient.getInstance();
-      const timeFrom = dayjs(searchParams.timeFrom).tz('Asia/Seoul').format();
-      const timeTo = dayjs(searchParams.timeTo).tz('Asia/Seoul').format();
+
+      // KST 시간을 UTC로 변환 (9시간 차이)
+      const timeFrom = dayjs(searchParams.timeFrom)
+        .subtract(9, 'hour')
+        .format('YYYY-MM-DDTHH:mm:ss.SSS[Z]');
+      const timeTo = dayjs(searchParams.timeTo)
+        .subtract(9, 'hour')
+        .format('YYYY-MM-DDTHH:mm:ss.SSS[Z]');
 
       const countQuery = {
         track_total_hits: true,
@@ -400,7 +406,6 @@ export class DownloadManager {
                     gte: timeFrom,
                     lte: timeTo,
                     format: 'strict_date_time',
-                    time_zone: '+09:00',
                   },
                 },
               },
@@ -421,11 +426,19 @@ export class DownloadManager {
         size: 0,
       };
 
+      console.log('[DownloadManager] Count query:', {
+        searchParams,
+        timeFrom,
+        timeTo,
+        query: JSON.stringify(countQuery, null, 2),
+        timestamp: new Date().toISOString(),
+      });
+
       const response = await client.request<{
         hits: {
           total: {
             value: number;
-            relation?: string;
+            relation: 'eq' | 'gte';
           };
         };
       }>({
@@ -434,7 +447,33 @@ export class DownloadManager {
         body: countQuery,
       });
 
-      return response.hits?.total?.value || 0;
+      console.log('[DownloadManager] Count response:', {
+        response: JSON.stringify(response, null, 2),
+        searchParams,
+        timeFrom,
+        timeTo,
+        timestamp: new Date().toISOString(),
+      });
+
+      const total = response?.hits?.total;
+      if (!total || typeof total !== 'object' || !('value' in total)) {
+        console.error('[DownloadManager] Invalid OpenSearch response:', {
+          response: JSON.stringify(response, null, 2),
+          searchParams,
+          timeFrom,
+          timeTo,
+          timestamp: new Date().toISOString(),
+        });
+        throw new Error(
+          'Invalid response from OpenSearch: missing total hits value'
+        );
+      }
+
+      if (total.value === 0) {
+        throw new Error('검색 결과가 없습니다.');
+      }
+
+      return total.value;
     } catch (error) {
       console.error('[DownloadManager] Failed to get actual count:', {
         error: error instanceof Error ? error.message : String(error),

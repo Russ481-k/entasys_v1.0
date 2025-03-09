@@ -5,7 +5,7 @@ import { columnNames } from './versions/11.0/colNameList_11.0';
 export const zPaloLogs = () =>
   z.object(
     columnNames.reduce((acc, columnName) => {
-      acc[columnName] = z.string().nullable().optional();
+      acc[columnName] = z.string().nullable();
       return acc;
     }, {})
   );

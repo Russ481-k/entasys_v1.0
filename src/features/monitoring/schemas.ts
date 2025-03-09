@@ -8,7 +8,7 @@ export const zPaloLogs = () =>
   z.object(
     columnNames.reduce(
       (acc, columnName: string) => {
-        acc[columnName] = z.string().nullable().optional();
+        acc[columnName] = z.string().nullable();
         return acc;
       },
       {} as Record<string, z.ZodTypeAny>

@@ -128,7 +128,7 @@ export async function searchOpenSearchWithScroll({
       pageSize: limit,
       scrollTime: '2m',
       size: 1000,
-      searchId,
+      searchId: searchId || '',
     });
     if (onProgress) {
       onProgress({
@@ -183,48 +183,52 @@ export const projectsRouter = createTRPCRouter({
         status: 'loading',
       };
       try {
-        // 검색 세션 생성을 가장 먼저 수행
+        // 세션 ID 생성
         const sessionId = randomUUID();
         console.log('[Search] Creating new search session with ID:', sessionId);
-        const searchSession = await ctx.db.$transaction(async (tx) => {
-          // 기존 활성 세션이 있다면 취소
-          const activeSessions = await tx.searchSession.findMany({
-            where: {
-              userId: ctx.user.id,
-              status: 'ACTIVE',
-            },
-          });
-          if (activeSessions.length > 0) {
-            console.log(
-              '[Search] Cancelling existing active sessions:',
-              activeSessions.map((s) => s.searchId)
-            );
-            await tx.searchSession.updateMany({
+        // 검색 세션 생성을 별도 트랜잭션으로 분리
+        const searchSession = await ctx.db.$transaction(
+          async (tx) => {
+            const activeSessions = await tx.searchSession.findMany({
               where: {
-                id: {
-                  in: activeSessions.map((s) => s.id),
-                },
+                userId: ctx.user.id,
+                status: 'ACTIVE',
               },
+            });
+            const sessionsToCancel = activeSessions.filter(
+              (session) => session.status === 'ACTIVE'
+            );
+            if (sessionsToCancel.length > 0) {
+              await tx.searchSession.updateMany({
+                where: {
+                  id: {
+                    in: sessionsToCancel.map((s) => s.id),
+                  },
+                },
+                data: {
+                  status: 'CANCELLED',
+                  cancelReason: '새로운 검색 시작으로 인한 취소',
+                  lastActivityAt: new Date(),
+                },
+              });
+            }
+            return tx.searchSession.create({
               data: {
-                status: 'CANCELLED',
-                cancelReason: '새로운 검색 시작으로 인한 취소',
+                userId: ctx.user.id,
+                clientIp: ctx.clientIp,
+                userAgent: ctx.userAgent,
+                searchId: sessionId,
+                status: 'ACTIVE',
+                searchParams: input,
                 lastActivityAt: new Date(),
               },
             });
+          },
+          {
+            timeout: 30000, // 30초 타임아웃
+            isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
           }
-          // 새 세션 생성
-          return tx.searchSession.create({
-            data: {
-              userId: ctx.user.id,
-              clientIp: ctx.clientIp,
-              userAgent: ctx.userAgent,
-              searchId: sessionId,
-              status: 'ACTIVE',
-              searchParams: input,
-              lastActivityAt: new Date(),
-            },
-          });
-        });
+        );
         console.log('[Search] Created new search session:', {
           id: searchSession.id,
           searchId: searchSession.searchId,
@@ -314,13 +318,13 @@ export const projectsRouter = createTRPCRouter({
             }
           }
         }
-        // 이후 검색 수행
+        // 검색 작업은 트랜잭션 외부에서 실행
         const searchResult = await searchOpenSearchWithScroll({
           searchBody,
           menu: input.menu,
           currentPage: input.currentPage,
           limit: input.limit,
-          searchId: sessionId, // 생성된 세션 ID 전달
+          searchId: sessionId,
           onProgress: (progress) => {
             loadingStatus = {
               current: progress.current,
@@ -329,28 +333,38 @@ export const projectsRouter = createTRPCRouter({
             };
           },
         });
-        // 검색 결과가 있는 경우에만 COMPLETED로 상태 변경
-        const updatedSession = await ctx.db.$transaction(async (tx) => {
-          const session = await tx.searchSession.findUnique({
-            where: { id: searchSession.id },
-            select: { id: true, searchId: true, status: true },
-          });
-          if (!session) {
-            console.log('[Search] Session not found after search');
-            throw new TRPCError({
-              code: 'INTERNAL_SERVER_ERROR',
-              message: '검색 세션을 찾을 수 없습니다.',
+        // 검색 결과 업데이트를 별도 트랜잭션으로 처리
+        const updatedSession = await ctx.db.$transaction(
+          async (tx) => {
+            const session = await tx.searchSession.findUnique({
+              where: { id: searchSession.id },
+              select: { id: true, searchId: true, status: true },
             });
+            if (!session) {
+              throw new TRPCError({
+                code: 'INTERNAL_SERVER_ERROR',
+                message: '검색 세션을 찾을 수 없습니다.',
+              });
+            }
+            if (session.status === 'COMPLETED') {
+              return session;
+            }
+            return tx.searchSession.update({
+              where: { id: session.id },
+              data: {
+                status:
+                  searchResult.scrollResponse.length > 0
+                    ? 'COMPLETED'
+                    : 'ERROR',
+                lastActivityAt: new Date(),
+              },
+            });
+          },
+          {
+            timeout: 30000, // 30초 타임아웃
+            isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
           }
-          return tx.searchSession.update({
-            where: { id: session.id },
-            data: {
-              status:
-                searchResult.scrollResponse.length > 0 ? 'COMPLETED' : 'ERROR',
-              lastActivityAt: new Date(),
-            },
-          });
-        });
+        );
         console.log('[Search] Search completed:', {
           sessionId: updatedSession.id,
           status: updatedSession.status,
@@ -363,15 +377,32 @@ export const projectsRouter = createTRPCRouter({
           searchResult.scrollResponse.length > 0
             ? searchResult.scrollResponse.map((hit) =>
                 columnNames.reduce((acc, col) => {
-                  var _a;
+                  var _a, _b;
                   let value =
-                    ((_a = hit._source) === null || _a === void 0
-                      ? void 0
-                      : _a[col]) || null;
-                  if (col === '@timestamp' && typeof value === 'string') {
+                    (_b =
+                      (_a = hit._source) === null || _a === void 0
+                        ? void 0
+                        : _a[col]) !== null && _b !== void 0
+                      ? _b
+                      : null;
+                  // null 값 처리
+                  if (value === null || value === undefined) {
+                    return Object.assign(Object.assign({}, acc), {
+                      [col]: null,
+                    });
+                  }
+                  // 타임스탬프 처리
+                  if (col === '@timestamp') {
                     value = dayjs(value)
                       .tz('Asia/Seoul')
                       .format('YYYY-MM-DD HH:mm:ss');
+                  } else {
+                    // 배열인 경우 join으로 문자열로 변환
+                    if (Array.isArray(value)) {
+                      value = value.join(', ');
+                    }
+                    // 나머지 모든 값을 문자열로 변환
+                    value = String(value);
                   }
                   return Object.assign(Object.assign({}, acc), {
                     [col]: value,
@@ -480,6 +511,7 @@ export const projectsRouter = createTRPCRouter({
         },
         {
           isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+          timeout: 30000, // 30초 타임아웃
         }
       );
     }),

@@ -1,0 +1,2 @@
+plugins.security.disabled: true
+discovery.type: single-node

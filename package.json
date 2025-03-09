@@ -21,10 +21,10 @@
     "start": "next start -p 8000",
     "start:ws": "NODE_ENV=production dotenv -e .env -- tsx dist/server/index.js",
     "prod:clean": "pm2 delete all || true && sudo lsof -i :8000 || true && sudo kill -9 $(sudo lsof -t -i:8000) || true",
-    "prod:docker": "docker stop $(docker ps -aq) || true && docker rm $(docker ps -aq) || true && pnpm dk:init && pnpm generate:license",
+    "prod:dk": "docker stop $(docker ps -aq) || true && docker rm $(docker ps -aq) || true && pnpm dk:init && pnpm generate:license",
     "prod:permissions": "sudo chown -R vtek:vtek ./.next && sudo chmod -R 755 ./.next",
     "prod:start": "pm2 start ecosystem.config.cjs --log './log.txt'",
-    "prod:all": "run-s prod:clean build prod:docker prod:permissions prod:start",
+    "prod:all": "run-s prod:clean build prod:dk prod:permissions prod:start",
     "prod": "run-s prod:clean build prod:permissions prod:start",
     "pretty": "prettier -w .",
     "lint": "run-p lint:*",
@@ -183,11 +183,11 @@
     "prisma": "5.11.0",
     "storybook": "8.1.1",
     "storybook-dark-mode": "4.0.1",
+    "tsconfig-paths": "^4.2.0",
     "tsx": "4.7.1",
     "typescript": "5.4.2",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "1.5.0",
-    "tsconfig-paths": "^4.2.0"
+    "vitest": "1.5.0"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed/index.ts"
@@ -208,5 +208,17 @@
   "bugs": {
     "url": "https://github.com/Russ481-k/palolog_v2"
   },
-  "homepage": "https://github.com/bearstudio/start-ui-web#readme"
+  "homepage": "https://github.com/bearstudio/start-ui-web#readme",
+  "pnpm": {
+    "ignoredBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "bcrypt",
+      "core-js",
+      "core-js-pure",
+      "esbuild",
+      "prisma",
+      "sharp"
+    ]
+  }
 }

@@ -260,7 +260,7 @@ export class SearchSessionService {
         },
         {
           isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-          timeout: 5000, // 5초 타임아웃
+          timeout: 30000, // 30초 타임아웃
         }
       );
     } catch (error) {
