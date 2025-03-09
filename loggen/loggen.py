@@ -116,5 +116,5 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         sys.exit(0)
         
- #sudo nohup python3 loggen.py --host 192.168.1.132 --port 514 --count 5000 --sleep 1
+ #sudo nohup python3 loggen.py --host 192.168.1.47 --port 514 --count 5000 --sleep 1
  #nohup: ignoring input and appending output to 'nohup.out'
