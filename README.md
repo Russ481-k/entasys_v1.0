@@ -266,3 +266,21 @@
 
     prod:clean; build; prod:docker; prod:permissions; prod:start;
     ```
+
+```
+    # I/O 성능 최적화 (4TB SSD 활용)
+    echo "vm.dirty_ratio=30" | sudo tee -a /etc/sysctl.conf
+    echo "vm.dirty_background_ratio=10" | sudo tee -a /etc/sysctl.conf
+
+    # 네트워크 성능 추가 최적화
+    echo "net.core.netdev_max_backlog=65536" | sudo tee -a /etc/sysctl.conf
+
+    # 영구 설정 추가
+    echo "vm.swappiness=10" | sudo tee -a /etc/sysctl.conf
+    echo "vm.max_map_count=262144" | sudo tee -a /etc/sysctl.conf
+    echo "net.core.rmem_max=33554432" | sudo tee -a /etc/sysctl.conf
+    echo "net.core.wmem_max=33554432" | sudo tee -a /etc/sysctl.conf
+
+    # 변경된 설정 적용
+    sudo sysctl -p
+```
