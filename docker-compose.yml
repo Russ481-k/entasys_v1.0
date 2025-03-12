@@ -1,6 +1,7 @@
 services:
   postgres:
     image: postgres:16.1
+    restart: unless-stopped
     ports:
       - '${DOCKER_DATABASE_PORT:-5432}:5432'
     environment:
@@ -54,6 +55,7 @@ services:
 
   opensearch:
     image: opensearchproject/opensearch:2.13.0
+    restart: unless-stopped
     container_name: opensearch
     networks:
       - palolog
@@ -101,6 +103,7 @@ services:
 
   logstash:
     image: opensearchproject/logstash-oss-with-opensearch-output-plugin:8.9.0
+    restart: unless-stopped
     container_name: logstash
     networks:
       - palolog
