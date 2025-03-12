@@ -1,5 +1,6 @@
 import { memo, useCallback, useRef } from 'react';
 
+import { Box } from '@chakra-ui/react';
 import {
   CellClickedEvent,
   GridReadyEvent,
@@ -22,19 +23,19 @@ interface GridSectionProps {
   menu: MenuType;
   onCellClicked: (event: CellClickedEvent<zLogs>) => void;
   colorMode: 'light' | 'dark';
+  timeFormatter: (params: ValueFormatterParams) => string;
 }
 
 export const GridSection = memo(
-  ({ data, isLoading, menu, onCellClicked, colorMode }: GridSectionProps) => {
+  ({
+    data,
+    isLoading,
+    menu,
+    onCellClicked,
+    colorMode,
+    timeFormatter,
+  }: GridSectionProps) => {
     const gridRef = useRef<AgGridReact<zLogs>>(null);
-
-    const timeFormatter = useCallback((event: ValueFormatterParams<zLogs>) => {
-      if (Number(event.value) < 1000000) {
-        return '-';
-      } else {
-        return dayjs(event.value / 1000000).format('YYYY-MM-DD HH:mm:ss');
-      }
-    }, []);
 
     const onGridReady = useCallback((params: GridReadyEvent) => {
       setTimeout(() => {
@@ -47,7 +48,7 @@ export const GridSection = memo(
     }, []);
 
     return (
-      <div
+      <Box
         style={{
           width: '100%',
           height: 'calc(100vh - 160px)',
@@ -63,7 +64,7 @@ export const GridSection = memo(
           headerHeight={26}
           onGridReady={onGridReady}
         />
-      </div>
+      </Box>
     );
   }
 );

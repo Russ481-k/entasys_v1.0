@@ -35,7 +35,6 @@ const createColumn = (
       fontSize: '12px',
       padding: '2px 8px',
       lineHeight: '16px',
-      // whiteSpace: 'nowrap',
       overflow: 'hidden',
       textOverflow: 'ellipsis',
       display: 'flex',
@@ -66,6 +65,19 @@ const createColumn = (
   if (columnName.toLowerCase().includes('time')) {
     column.valueFormatter = timeFormatter;
     column.flex = 0;
+    column.minWidth = 160; // 날짜 표시를 위한 충분한 너비 확보
+
+    // 로딩 상태에 따른 셀 렌더러 설정
+    column.cellRenderer = (params: ICellRendererParams<zLogs>) => {
+      if (!isLoading) {
+        return (
+          <Flex py="14px">
+            <Skeleton h={3} w={140} borderRadius={2} />
+          </Flex>
+        );
+      }
+      return params.valueFormatted || params.value;
+    };
   }
 
   // Domain 컬럼에 대한 valueFormatter 추가

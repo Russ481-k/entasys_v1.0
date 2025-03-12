@@ -79,6 +79,15 @@ export const SearchHeader = memo(
     };
 
     useEffect(() => {
+      form.reset({
+        timeFrom: defaultValues.timeFrom,
+        timeTo: defaultValues.timeTo,
+        currentPage: 1,
+        searchTerm: defaultValues.searchTerm,
+      });
+    }, [defaultValues, form]);
+
+    useEffect(() => {
       if (isLoading) {
         form.reset(form.getValues(), {
           keepValues: true,
