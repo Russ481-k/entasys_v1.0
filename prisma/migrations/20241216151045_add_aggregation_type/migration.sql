@@ -2,7 +2,7 @@
 CREATE TYPE "AccountStatus" AS ENUM ('ENABLED', 'DISABLED', 'NOT_VERIFIED');
 
 -- CreateEnum
-CREATE TYPE "UserRole" AS ENUM ('APP', 'ADMIN');
+CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'ADMIN');
 
 -- CreateTable
 CREATE TABLE "User" (
@@ -14,7 +14,7 @@ CREATE TABLE "User" (
     "email" TEXT,
     "accountStatus" "AccountStatus" NOT NULL DEFAULT 'NOT_VERIFIED',
     "image" TEXT,
-    "authorizations" "UserRole"[] DEFAULT ARRAY['APP']::"UserRole"[],
+    "authorizations" "UserRole"[] DEFAULT ARRAY['ADMIN']::"UserRole"[],
     "language" TEXT NOT NULL DEFAULT 'en',
     "lastLoginAt" TIMESTAMP(3),
 

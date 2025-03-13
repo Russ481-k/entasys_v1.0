@@ -59,8 +59,8 @@
     "authorizations": {
       "label": "Authorizations",
       "options": {
-        "ADMIN": "Administrator",
-        "APP": "Application"
+        "ADMIN": "Admin",
+        "SYSTEM_ADMIN": "System Admin"
       },
       "required": "At least one authorization is required"
     },

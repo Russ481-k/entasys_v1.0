@@ -15,7 +15,7 @@ export async function createUsers() {
         name: 'Admin',
         id: 'admin',
         password: bcrypt.hashSync(VALIDATION_PASSWORD_MOCKED, 8),
-        authorizations: ['APP', 'ADMIN'],
+        authorizations: ['SYSTEM_ADMIN'],
         accountStatus: 'ENABLED',
         email: 'admin@admin.co.kr',
       },

@@ -21,8 +21,8 @@ enum AccountStatus {
 }
 
 enum UserRole {
-  APP
   ADMIN
+  SYSTEM_ADMIN
 }
 
 enum SearchSessionStatus {
@@ -41,7 +41,7 @@ model User {
   email          String        @unique
   accountStatus  AccountStatus @default(NOT_VERIFIED)
   image          String?
-  authorizations UserRole[]    @default([APP])
+  authorizations UserRole[]    @default([ADMIN])
   language       String        @default("en")
   lastLoginAt    DateTime?
   searchSessions SearchSession[]

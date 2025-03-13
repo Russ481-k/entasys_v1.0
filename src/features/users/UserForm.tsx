@@ -47,6 +47,7 @@ export const UserForm = () => {
         type="multi-select"
         name="authorizations"
         label={t('users:data.authorizations.label')}
+        isDisabled
         options={USER_AUTHORIZATIONS.map((authorization) => ({
           value: authorization,
           label: t(`users:data.authorizations.options.${authorization}`),

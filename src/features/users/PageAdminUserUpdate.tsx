@@ -70,7 +70,7 @@ export default function PageAdminUserUpdate() {
       email: user.data?.email ?? '',
       name: user.data?.name ?? '',
       language: user.data?.language ?? DEFAULT_LANGUAGE_KEY,
-      authorizations: user.data?.authorizations ?? ['APP'],
+      authorizations: user.data?.authorizations ?? ['ADMIN'],
     },
   });
 
@@ -84,8 +84,9 @@ export default function PageAdminUserUpdate() {
         });
       }}
     >
-      <AdminLayoutPage containerMaxWidth="container.md">
+      <AdminLayoutPage w="100%">
         <AdminLayoutPageTopBar
+          w="100%"
           leftActions={<AdminBackButton withConfirm={form.formState.isDirty} />}
           rightActions={
             <>

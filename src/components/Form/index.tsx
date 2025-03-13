@@ -27,6 +27,7 @@ export const Form = <TFieldValues extends FieldValues>({
     <FormProvider {...props}>
       <form
         noValidate
+        style={{ width: '100%' }}
         onSubmit={
           props.onSubmit ? props.handleSubmit(props.onSubmit) : undefined
         }

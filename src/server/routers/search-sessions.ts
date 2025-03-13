@@ -8,7 +8,7 @@ import { prisma } from '../config/prisma';
 const searchSessionService = new SearchSessionService(prisma);
 
 export const searchSessionRouter = createTRPCRouter({
-  create: protectedProcedure({ authorizations: ['ADMIN'] })
+  create: protectedProcedure({ authorizations: ['ADMIN', 'SYSTEM_ADMIN'] })
     .input(
       z.object({
         searchId: z.string(),
@@ -68,7 +68,7 @@ export const searchSessionRouter = createTRPCRouter({
       return searchSessionService.cancelSession(session.id, input.reason);
     }),
 
-  getStatus: protectedProcedure({ authorizations: ['ADMIN'] })
+  getStatus: protectedProcedure({ authorizations: ['ADMIN', 'SYSTEM_ADMIN'] })
     .input(z.object({ searchId: z.string() }))
     .query(async ({ ctx, input }) => {
       const session = await searchSessionService.findBySearchId(input.searchId);
@@ -86,7 +86,7 @@ export const searchSessionRouter = createTRPCRouter({
       };
     }),
 
-  cleanup: protectedProcedure({ authorizations: ['ADMIN'] })
+  cleanup: protectedProcedure({ authorizations: ['ADMIN', 'SYSTEM_ADMIN'] })
     .input(z.object({ maxAgeMinutes: z.number().min(1).default(30) }))
     .mutation(async ({ input }) => {
       return searchSessionService.cleanupInactiveSessions(input.maxAgeMinutes);

@@ -74,13 +74,17 @@ export const AdminLayoutPageTopBar = ({
       boxShadow="layout"
       borderBottom="1px solid transparent"
       borderBottomColor={colorMode === 'light' ? 'gray.100' : 'gray.800'}
+      m={0}
+      w="100%"
       {...rest}
     >
       <PageContainer
         alignItems="center"
         justifyContent="center"
         py={3}
-        flex={0}
+        flex={1}
+        m={0}
+        w="100%"
         {...containerProps}
       >
         <Box w="full" h="0" pb="safe-top" />
@@ -184,7 +188,7 @@ type AdminLayoutPageProps = FlexProps & {
 
 export const AdminLayoutPage = ({
   showNavBar = true,
-  containerMaxWidth = 'container.lg',
+  containerMaxWidth = '100%',
   nav = null,
   children,
 }: AdminLayoutPageProps) => {

@@ -55,7 +55,7 @@ export default function PageAdminUserCreate() {
       name: '',
       email: '',
       language: DEFAULT_LANGUAGE_KEY,
-      authorizations: ['APP'],
+      authorizations: ['SYSTEM_ADMIN'],
     },
   });
 

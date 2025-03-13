@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { DEFAULT_LANGUAGE_KEY } from '@/lib/i18n/constants';
 import { zu } from '@/lib/zod/zod-utils';
 
-export const USER_AUTHORIZATIONS = ['APP', 'ADMIN'];
+export const USER_AUTHORIZATIONS = ['ADMIN', 'ADMIN'];
 export const zUserAuthorization = () => z.enum(USER_AUTHORIZATIONS);
 export const zUserAccountStatus = () =>
   z.enum(['DISABLED', 'ENABLED', 'NOT_VERIFIED']).catch('DISABLED');
@@ -37,7 +37,7 @@ export const zUser = () =>
           required_error: t('users:data.authorizations.required'),
         })
       )
-      .default(['APP']),
+      .default(['ADMIN', 'SYSTEM_ADMIN']),
     accountStatus: zUserAccountStatus(),
     language: zu.string
       .nonEmpty(z.string().min(2))

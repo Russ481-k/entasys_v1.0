@@ -109,7 +109,7 @@ const AdminNavBarAccountMenu = ({ ...rest }: Omit<MenuProps, 'children'>) => {
               {t('admin:layout.accountMenu.apiDocs')}
             </MenuItem>
 
-            {account.data?.authorizations.includes('APP') && (
+            {account.data?.authorizations.includes('ADMIN') && (
               <MenuItem
                 as={LinkApp}
                 href="/"

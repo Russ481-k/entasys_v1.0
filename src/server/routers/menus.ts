@@ -7,7 +7,7 @@
 // import { createTRPCRouter, protectedProcedure } from '@/server/config/trpc';
 
 // export const menusRouter = createTRPCRouter({
-//   getById: protectedProcedure({ authorizations: ['ADMIN'] })
+//   getById: protectedProcedure({ authorizations: ['ADMIN', 'SYSTEM_ADMIN'] })
 //     .meta({
 //       openapi: {
 //         method: 'GET',
@@ -40,7 +40,7 @@
 //       return menu;
 //     }),
 
-//   getAll: protectedProcedure({ authorizations: ['ADMIN'] })
+//   getAll: protectedProcedure({ authorizations: ['ADMIN', 'SYSTEM_ADMIN'] })
 //     .meta({
 //       openapi: {
 //         method: 'GET',
@@ -113,7 +113,7 @@
 //       };
 //     }),
 
-//   create: protectedProcedure({ authorizations: ['ADMIN'] })
+//   create: protectedProcedure({ authorizations: ['ADMIN', 'SYSTEM_ADMIN'] })
 //     .meta({
 //       openapi: {
 //         method: 'POST',
@@ -142,7 +142,7 @@
 //       }
 //     }),
 
-//   deactivate: protectedProcedure({ authorizations: ['ADMIN'] })
+//   deactivate: protectedProcedure({ authorizations: ['ADMIN', 'SYSTEM_ADMIN'] })
 //     .meta({
 //       openapi: {
 //         method: 'POST',
@@ -175,7 +175,7 @@
 //       });
 //     }),
 
-//   activate: protectedProcedure({ authorizations: ['ADMIN'] })
+//   activate: protectedProcedure({ authorizations: ['ADMIN', 'SYSTEM_ADMIN'] })
 //     .meta({
 //       openapi: {
 //         method: 'POST',
@@ -208,7 +208,7 @@
 //       });
 //     }),
 
-//   updateById: protectedProcedure({ authorizations: ['ADMIN'] })
+//   updateById: protectedProcedure({ authorizations: ['ADMIN', 'SYSTEM_ADMIN'] })
 //     .meta({
 //       openapi: {
 //         method: 'PUT',
@@ -238,7 +238,7 @@
 //       }
 //     }),
 
-//   removeById: protectedProcedure({ authorizations: ['ADMIN'] })
+//   removeById: protectedProcedure({ authorizations: ['ADMIN', 'SYSTEM_ADMIN'] })
 //     .meta({
 //       openapi: {
 //         method: 'DELETE',

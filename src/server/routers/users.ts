@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, UserRole } from '@prisma/client';
 import { TRPCError } from '@trpc/server';
 import bcrypt from 'bcrypt';
 import { z } from 'zod';
@@ -9,7 +9,7 @@ import { ExtendedTRPCError } from '@/server/config/errors';
 import { createTRPCRouter, protectedProcedure } from '@/server/config/trpc';
 
 export const usersRouter = createTRPCRouter({
-  getById: protectedProcedure({ authorizations: ['ADMIN'] })
+  getById: protectedProcedure({ authorizations: ['ADMIN', 'SYSTEM_ADMIN'] })
     .meta({
       openapi: {
         method: 'GET',
@@ -40,7 +40,7 @@ export const usersRouter = createTRPCRouter({
       return user;
     }),
 
-  getAll: protectedProcedure({ authorizations: ['ADMIN'] })
+  getAll: protectedProcedure({ authorizations: ['ADMIN', 'SYSTEM_ADMIN'] })
     .meta({
       openapi: {
         method: 'GET',
@@ -113,7 +113,7 @@ export const usersRouter = createTRPCRouter({
       };
     }),
 
-  create: protectedProcedure({ authorizations: ['ADMIN'] })
+  create: protectedProcedure({ authorizations: ['ADMIN', 'SYSTEM_ADMIN'] })
     .meta({
       openapi: {
         method: 'POST',
@@ -152,7 +152,7 @@ export const usersRouter = createTRPCRouter({
       }
     }),
 
-  deactivate: protectedProcedure({ authorizations: ['ADMIN'] })
+  deactivate: protectedProcedure({ authorizations: ['ADMIN', 'SYSTEM_ADMIN'] })
     .meta({
       openapi: {
         method: 'POST',
@@ -185,7 +185,7 @@ export const usersRouter = createTRPCRouter({
       });
     }),
 
-  activate: protectedProcedure({ authorizations: ['ADMIN'] })
+  activate: protectedProcedure({ authorizations: ['ADMIN', 'SYSTEM_ADMIN'] })
     .meta({
       openapi: {
         method: 'POST',
@@ -218,7 +218,7 @@ export const usersRouter = createTRPCRouter({
       });
     }),
 
-  updateById: protectedProcedure({ authorizations: ['ADMIN'] })
+  updateById: protectedProcedure({ authorizations: ['ADMIN', 'SYSTEM_ADMIN'] })
     .meta({
       openapi: {
         method: 'PUT',
@@ -246,7 +246,7 @@ export const usersRouter = createTRPCRouter({
             email: input.email || input.id,
             name: input.name,
             language: input.language,
-            authorizations: input.authorizations,
+            authorizations: input.authorizations as UserRole[],
           },
         });
       } catch (e) {
@@ -256,7 +256,7 @@ export const usersRouter = createTRPCRouter({
       }
     }),
 
-  removeById: protectedProcedure({ authorizations: ['ADMIN'] })
+  removeById: protectedProcedure({ authorizations: ['SYSTEM_ADMIN'] })
     .meta({
       openapi: {
         method: 'DELETE',

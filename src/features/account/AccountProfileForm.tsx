@@ -52,7 +52,7 @@ export const AccountProfileForm = () => {
       email: account.data?.email ?? '',
       name: account.data?.name ?? '',
       language: account.data?.language ?? DEFAULT_LANGUAGE_KEY,
-      authorizations: account.data?.authorizations ?? ['APP'],
+      authorizations: account.data?.authorizations ?? ['ADMIN'],
     },
   });
 

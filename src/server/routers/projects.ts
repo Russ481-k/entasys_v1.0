@@ -194,7 +194,7 @@ export async function searchOpenSearchWithScroll({
 }
 
 export const projectsRouter = createTRPCRouter({
-  getAll: protectedProcedure({ authorizations: ['ADMIN'] })
+  getAll: protectedProcedure({ authorizations: ['ADMIN', 'SYSTEM_ADMIN'] })
     .input(
       zPaloLogsParams().extend({
         menu: z.enum(['TRAFFIC', 'THREAT', 'SYSTEM']).optional(),
@@ -488,7 +488,9 @@ export const projectsRouter = createTRPCRouter({
       }
     }),
 
-  cancelSearch: protectedProcedure({ authorizations: ['ADMIN'] })
+  cancelSearch: protectedProcedure({
+    authorizations: ['ADMIN', 'SYSTEM_ADMIN'],
+  })
     .input(z.object({ searchId: z.string() }))
     .mutation(async ({ ctx, input }) => {
       console.log('[CancelSearch] Attempting to cancel search:', {

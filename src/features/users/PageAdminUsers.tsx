@@ -132,23 +132,25 @@ export default function PageAdminUsers() {
                       {user.email}
                     </DataListText>
                   </DataListCell>
-                  <DataListCell w="10ch" display={{ base: 'none', sm: 'flex' }}>
-                    {user.authorizations
-                      .filter((a) => a !== 'APP')
-                      .map((authorization) => (
-                        <Tag
-                          size="sm"
-                          colorScheme="warning"
-                          key={authorization}
-                          lineHeight={1}
-                        >
-                          <chakra.span noOfLines={1}>
-                            {t(
-                              `users:data.authorizations.options.${authorization}`
-                            )}
-                          </chakra.span>
-                        </Tag>
-                      ))}
+                  <DataListCell w="12ch" display={{ base: 'none', sm: 'flex' }}>
+                    {user.authorizations.map((authorization) => (
+                      <Tag
+                        size="sm"
+                        colorScheme={
+                          authorization === 'SYSTEM_ADMIN'
+                            ? 'success'
+                            : 'warning'
+                        }
+                        key={authorization}
+                        lineHeight={1}
+                      >
+                        <chakra.span noOfLines={1}>
+                          {t(
+                            `users:data.authorizations.options.${authorization}`
+                          )}
+                        </chakra.span>
+                      </Tag>
+                    ))}
                   </DataListCell>
                   <DataListCell
                     pointerEvents="none"

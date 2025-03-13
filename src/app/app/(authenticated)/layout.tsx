@@ -12,7 +12,7 @@ export default function AutenticatedLayout({
   return (
     <Suspense>
       <GuardAuthenticated
-        authorizations={['APP']}
+        authorizations={['ADMIN', 'SYSTEM_ADMIN']}
         loginPath={`${APP_PATH}/login`}
       >
         <AppLayout>{children}</AppLayout>

@@ -4,7 +4,7 @@ import { Logger } from 'pino';
 type UserContext = {
   id: string;
   language: string;
-  authorizations: ('ADMIN' | 'APP')[];
+  authorizations: ('ADMIN' | 'SYSTEM_ADMIN')[];
   accountStatus: 'DISABLED' | 'ENABLED' | 'NOT_VERIFIED';
   email?: string | null;
   name?: string | null;

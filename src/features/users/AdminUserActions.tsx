@@ -8,6 +8,7 @@ import {
   MenuList,
   MenuProps,
   Portal,
+  useColorMode,
 } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { LuCheckCircle, LuPenLine, LuTrash2, LuXCircle } from 'react-icons/lu';
@@ -33,6 +34,7 @@ export const AdminUserActions = ({ user, ...rest }: AdminUserActionProps) => {
 
   const toastSuccess = useToastSuccess();
   const toastError = useToastError();
+  const { colorMode } = useColorMode();
 
   const activateUser = trpc.users.activate.useMutation({
     onSuccess: async ({ email, name }) => {
@@ -91,10 +93,13 @@ export const AdminUserActions = ({ user, ...rest }: AdminUserActionProps) => {
     activateUser.isLoading || deactivateUser.isLoading || removeUser.isLoading;
 
   return (
-    <Menu placement="left-start" {...rest}>
+    <Menu placement="left-start">
       <MenuButton as={ActionsButton} isLoading={isLoading} />
       <Portal>
-        <MenuList>
+        <MenuList
+          borderColor={colorMode === 'dark' ? 'gray.600' : 'gray.200'}
+          {...rest}
+        >
           <MenuItem
             as={LinkAdmin}
             href={`/management/users/${user.id}`}
@@ -125,7 +130,9 @@ export const AdminUserActions = ({ user, ...rest }: AdminUserActionProps) => {
                   {t('common:actions.activate')}
                 </ConfirmMenuItem>
               )}
-              <MenuDivider />
+              <MenuDivider
+                color={colorMode === 'dark' ? 'gray.600' : 'gray.200'}
+              />
               <ConfirmModal
                 title={t('users:deleteModal.title')}
                 message={t('users:deleteModal.message', {
