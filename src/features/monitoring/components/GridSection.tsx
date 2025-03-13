@@ -9,7 +9,6 @@ import {
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 import { AgGridReact } from 'ag-grid-react';
-import dayjs from 'dayjs';
 
 import { MenuType } from '@/types/project';
 

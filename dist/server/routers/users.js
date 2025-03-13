@@ -242,7 +242,7 @@ export const usersRouter = createTRPCRouter({
         });
       }
     }),
-  removeById: protectedProcedure({ authorizations: ['ADMIN', 'SYSTEM_ADMIN'] })
+  removeById: protectedProcedure({ authorizations: ['SYSTEM_ADMIN'] })
     .meta({
       openapi: {
         method: 'DELETE',

@@ -10,7 +10,7 @@ import { validate } from '@/server/config/auth';
 import { createTRPCRouter, protectedProcedure } from '@/server/config/trpc';
 
 export const accountRouter = createTRPCRouter({
-  get: protectedProcedure()
+  get: protectedProcedure({ authorizations: ['ADMIN', 'SYSTEM_ADMIN'] })
     .meta({
       openapi: {
         method: 'GET',
@@ -41,7 +41,7 @@ export const accountRouter = createTRPCRouter({
       }
       return user;
     }),
-  update: protectedProcedure()
+  update: protectedProcedure({ authorizations: ['ADMIN', 'SYSTEM_ADMIN'] })
     .meta({
       openapi: {
         method: 'PUT',
@@ -95,7 +95,7 @@ export const accountRouter = createTRPCRouter({
         });
       }
     }),
-  updateId: protectedProcedure()
+  updateId: protectedProcedure({ authorizations: ['ADMIN', 'SYSTEM_ADMIN'] })
     .meta({
       openapi: {
         method: 'PUT',
@@ -153,7 +153,9 @@ export const accountRouter = createTRPCRouter({
         token,
       };
     }),
-  updatePassword: protectedProcedure()
+  updatePassword: protectedProcedure({
+    authorizations: ['ADMIN', 'SYSTEM_ADMIN'],
+  })
     .meta({
       openapi: {
         method: 'PUT',

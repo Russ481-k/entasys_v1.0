@@ -24,7 +24,7 @@
     "prod:dk": "docker stop $(docker ps -aq) || true && docker rm $(docker ps -aq) || true && pnpm dk:init && pnpm generate:license",
     "prod:permissions": "sudo chown -R vtek:vtek ./.next && sudo chmod -R 755 ./.next",
     "prod:start": "pm2 start ecosystem.config.cjs --log './log.txt'",
-    "prod:all": "run-s prod:clean build prod:dk prod:permissions prod:start",
+    "prod:all": "run-s prod:clean build prod:dk prod:permissions prod:start && sudo env PATH=$PATH:/usr/bin /home/vtek/.nvm/versions/node/v20.15.0/bin/pm2 startup systemd -u vtek --hp /home/vtek && pm2 save",
     "prod": "run-s prod:clean build prod:permissions prod:start",
     "pretty": "prettier -w .",
     "lint": "run-p lint:*",
