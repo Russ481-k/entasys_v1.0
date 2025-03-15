@@ -1,37 +1,37 @@
 {
   "datalist": {
-    "retry": "재시도",
+    "retry": "다시 시도",
     "errorTitle": "오류가 발생했습니다",
-    "emptyTitle": "데이터 없음",
-    "noResultsTitle": "\"{{searchTerm}}\"에 대한 결과가 없습니다"
+    "emptyTitle": "데이터가 없습니다",
+    "noResultsTitle": "\"{{searchTerm}}\"에 대한 검색 결과가 없습니다"
   },
   "dateAgo": {
-    "format": "YYYY년 MM월 DD일, hh:mm a"
+    "format": "YYYY년 MM월 DD일 HH:mm"
   },
   "actionsButton": {
-    "label": "동작"
+    "label": "작업"
   },
   "confirmMenuItem": {
-    "confirmText": "확인하려면 클릭"
+    "confirmText": "클릭하여 확인"
   },
   "confirmModal": {
     "confirmText": "확인",
-    "heading": "확인하시겠습니까?"
+    "heading": "확실합니까?"
   },
   "confirmPopover": {
     "confirmText": "확인",
-    "heading": "확인하시겠습니까?"
+    "heading": "확실합니까?"
   },
   "errorBoundary": {
     "title": "예기치 않은 오류가 발생했습니다.",
     "actions": {
-      "expand": "세부 정보 표시"
+      "expand": "상세 정보 보기"
     }
   },
   "errorPage": {
     "403": {
-      "title": "권한 없음",
-      "description": "죄송합니다, 이 페이지에 액세스할 수 없습니다."
+      "title": "접근 권한 없음",
+      "description": "죄송합니다. 이 페이지에 접근할 수 없습니다."
     },
     "404": {
       "title": "페이지를 찾을 수 없음",
@@ -40,12 +40,21 @@
     "errorCode": "오류 {{code}}",
     "default": {
       "title": "오류",
-      "description": "오류가 발생했습니다 😞"
+      "description": "문제가 발생했습니다 😞"
+    }
+  },
+  "errors": {
+    "domain": {
+      "notFound": "도메인을 찾을 수 없습니다",
+      "alreadyExists": "이미 존재하는 도메인입니다",
+      "validationError": "잘못된 도메인 데이터입니다",
+      "updateError": "도메인 업데이트에 실패했습니다",
+      "deleteError": "도메인 삭제에 실패했습니다"
     }
   },
   "pagination": {
-    "showing": "<box>표시 중</box> <strong>{{firstItemOnPage}}</strong> <span>에서</span> <strong>{{lastItemOnPage}}</strong> <span>까지</span> <strong>{{totalItems}}</strong> <box>결과</box>",
-    "loading": "<spinner></spinner> <box>로드 중</box> <strong>{{firstItemOnPage}}</strong> <span>에서</span> <strong>{{lastItemOnPage}}</strong> <span>까지</span> <strong>{{totalItems}}</strong> <box>결과</box>",
+    "showing": "<box>전체</box> <strong>{{totalItems}}</strong> <box>개 중</box> <strong>{{firstItemOnPage}}</strong> <span>-</span> <strong>{{lastItemOnPage}}</strong> <box>표시</box>",
+    "loading": "<spinner></spinner> <box>전체</box> <strong>{{totalItems}}</strong> <box>개 중</box> <strong>{{firstItemOnPage}}</strong> <span>-</span> <strong>{{lastItemOnPage}}</strong> <box>로딩 중</box>",
     "firstPage": "첫 페이지",
     "prevPage": "이전 페이지",
     "lastPage": "마지막 페이지",
@@ -53,16 +62,16 @@
   },
   "searchInput": {
     "placeholder": "검색...",
-    "clear": "검색 지우기"
+    "clear": "검색어 지우기"
   },
   "formField": {
-    "optional": "선택 사항"
+    "optional": "선택사항"
   },
   "fieldDayPicker": {
-    "invalidMessage": "유효하지 않은 날짜"
+    "invalidMessage": "잘못된 날짜"
   },
   "fieldMultiSelect": {
-    "noOption": "옵션이 없음"
+    "noOption": "옵션 없음"
   },
   "sort": {
     "sortAscending": "오름차순",

@@ -1,0 +1,85 @@
+{
+  "title": "Gestion des Domaines",
+  "description": "Gérer les domaines et les paramètres",
+  "actions": {
+    "create": "Créer un Domaine",
+    "edit": "Modifier le Domaine",
+    "delete": "Supprimer le Domaine"
+  },
+  "fields": {
+    "name": "Nom du Domaine",
+    "description": "Description",
+    "status": "Statut",
+    "createdAt": "Créé le",
+    "updatedAt": "Mis à jour le"
+  },
+  "messages": {
+    "createSuccess": "Domaine créé avec succès",
+    "updateSuccess": "Domaine mis à jour avec succès",
+    "deleteSuccess": "Domaine supprimé avec succès",
+    "error": "Une erreur est survenue"
+  },
+  "data": {
+    "id": {
+      "label": "ID",
+      "required": "L'ID est requis"
+    },
+    "name": {
+      "label": "Nom du Domaine",
+      "required": "Le nom du domaine est requis"
+    },
+    "description": {
+      "label": "Description"
+    },
+    "isActive": {
+      "label": "Actif"
+    },
+    "status": {
+      "label": "Statut",
+      "active": "Actif",
+      "inactive": "Inactif"
+    },
+    "actions": {
+      "label": "Actions"
+    },
+    "createdAt": {
+      "ago": "Créé <dateAgo />"
+    }
+  },
+  "form": {
+    "submit": "Enregistrer"
+  },
+  "list": {
+    "title": "Domaines",
+    "description": "Gérer les domaines utilisés dans le système",
+    "actions": {
+      "create": "Créer un Domaine"
+    },
+    "loading": "Chargement des domaines...",
+    "empty": "Aucun domaine trouvé",
+    "loadMore": {
+      "button": "Charger Plus",
+      "display": "Affichage de {{loaded}} sur {{total}} domaines"
+    }
+  },
+  "create": {
+    "title": "Créer un Domaine",
+    "description": "Créer un nouveau domaine",
+    "action": {
+      "save": "Créer le Domaine"
+    }
+  },
+  "update": {
+    "title": "Mettre à jour le Domaine",
+    "description": "Mettre à jour les informations du domaine",
+    "loading": "Chargement des informations du domaine...",
+    "action": {
+      "save": "Enregistrer les Modifications"
+    }
+  },
+  "delete": {
+    "title": "Supprimer le Domaine",
+    "description": "Êtes-vous sûr de vouloir supprimer ce domaine ?",
+    "action": "Supprimer le Domaine"
+  }
+}

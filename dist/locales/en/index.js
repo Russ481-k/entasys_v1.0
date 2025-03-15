@@ -10,6 +10,7 @@ import auth from './auth.json';
 import common from './common.json';
 import components from './components.json';
 import database from './database.json';
+import domains from './domains.json';
 import emails from './emails.json';
 import management from './management.json';
 import menus from './menus.json';
@@ -25,6 +26,7 @@ export default {
   database,
   common,
   components,
+  domains,
   emails,
   management,
   menus,

@@ -1,0 +1,9 @@
+{
+  "nav": {
+    "title": "Management",
+    "users": "User Management",
+    "domains": "Domain Management",
+    "menus": "Menu Management",
+    "database": "Database Management"
+  }
+} 

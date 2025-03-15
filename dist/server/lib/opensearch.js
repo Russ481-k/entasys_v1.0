@@ -45,15 +45,8 @@ export class OpenSearchClient {
       timeout: 30000,
     });
     return new Promise((resolve, reject) => {
-      console.log('[OpenSearch] Request details:', {
-        url: `http://${options.hostname}:${options.port}${path}`,
-        method,
-        headers: options.headers,
-        body: JSON.stringify(body, null, 2),
-      });
       const req = http.request(options, (res) => {
         let data = '';
-        // 타임아웃 설정
         res.setTimeout(30000, () => {
           req.destroy();
           reject(new Error('Response timeout'));
@@ -80,12 +73,10 @@ export class OpenSearchClient {
             resolve(parsedData);
           } catch (e) {
             console.error('[OpenSearch] Failed to parse response:', e);
-            console.error('[OpenSearch] Raw data that failed to parse:', data);
             reject(new Error(`Failed to parse OpenSearch response: ${e}`));
           }
         });
       });
-      // 요청 타임아웃 설정
       req.setTimeout(30000, () => {
         req.destroy();
         reject(new Error('Request timeout'));
@@ -104,13 +95,7 @@ export class OpenSearchClient {
     });
   }
   // 스크롤 검색 초기화
-  async initScroll({
-    index,
-    body,
-    scrollTime = '1m',
-    size = 1000,
-    sessionId, // 세션 ID 추가
-  }) {
+  async initScroll({ index, body, scrollTime = '1m', size = 1000, sessionId }) {
     const path = `/${index}/_search?scroll=${scrollTime}&size=${size}`;
     const response = await this.request({
       path,
@@ -119,9 +104,6 @@ export class OpenSearchClient {
     });
     if (sessionId && response._scroll_id) {
       this.activeScrolls.set(sessionId, response._scroll_id);
-      console.log(
-        `[ScrollSearch] Initialized scroll for session ${sessionId} with scroll ID ${response._scroll_id}`
-      );
     }
     return response;
   }
@@ -130,14 +112,8 @@ export class OpenSearchClient {
     try {
       const scrollId = this.activeScrolls.get(sessionId);
       if (!scrollId) {
-        console.log(
-          `[ScrollSearch] No active scroll found for session ${sessionId}`
-        );
         return { succeeded: false };
       }
-      console.log(
-        `[ScrollSearch] Clearing scroll for session ${sessionId} with scroll ID ${scrollId}`
-      );
       await this.request({
         path: '/_search/scroll',
         method: 'DELETE',
@@ -146,7 +122,6 @@ export class OpenSearchClient {
         },
       });
       this.activeScrolls.delete(sessionId);
-      console.log(`[ScrollSearch] Cleared scroll for session ${sessionId}`);
       return { succeeded: true };
     } catch (error) {
       console.error('[ScrollSearch] Failed to clear scroll:', error);
@@ -155,9 +130,6 @@ export class OpenSearchClient {
   }
   // 스크롤 계속
   async scroll(scrollId, scrollTime = '1m', sessionId) {
-    console.log(
-      `[ScrollSearch] Continuing scroll for session ${sessionId} with scroll ID ${scrollId}`
-    );
     const response = await this.request({
       path: '/_search/scroll',
       method: 'POST',
@@ -168,9 +140,6 @@ export class OpenSearchClient {
     });
     if (sessionId && response._scroll_id) {
       this.activeScrolls.set(sessionId, response._scroll_id);
-      console.log(
-        `[ScrollSearch] Updated scroll ID for session ${sessionId}: ${response._scroll_id}`
-      );
     }
     return response;
   }
@@ -217,11 +186,11 @@ export class OpenSearchClient {
     let currentScrollId;
     let shouldStop = false;
     let lastCheckTime = 0;
-    const CHECK_INTERVAL = 500; // 0.5초마다 상태 확인하도록 변경
+    const CHECK_INTERVAL = 500;
     const checkSessionStatus = async () => {
       const now = Date.now();
       if (now - lastCheckTime < CHECK_INTERVAL) {
-        return !shouldStop; // 이미 중지 신호가 있으면 false 반환
+        return !shouldStop;
       }
       if (!searchId) return true;
       try {
@@ -229,14 +198,10 @@ export class OpenSearchClient {
           await this.searchSessionService.findBySearchId(searchId);
         lastCheckTime = now;
         if (!session) {
-          console.log(`[ScrollSearch] Session ${searchId} not found`);
           shouldStop = true;
           return false;
         }
         if (session.status !== 'ACTIVE') {
-          console.log(
-            `[ScrollSearch] Session ${searchId} status changed to ${session.status}`
-          );
           shouldStop = true;
           if (currentScrollId) {
             await this.clearScroll(searchId).catch((error) => {
@@ -245,7 +210,6 @@ export class OpenSearchClient {
           }
           return false;
         }
-        // 세션 활성 시간 업데이트
         await this.searchSessionService.update(session.id, {
           lastActivityAt: new Date(),
         });
@@ -257,7 +221,6 @@ export class OpenSearchClient {
       }
     };
     try {
-      // 초기 검색 전 세션 상태 확인
       if (!(await checkSessionStatus())) {
         return { hits: [], total: 0, scrollId: undefined };
       }
@@ -272,18 +235,12 @@ export class OpenSearchClient {
       let hits = response.hits.hits;
       const total = response.hits.total.value;
       let allHits = [...hits];
-      // 매 스크롤마다 세션 상태 확인
       while (hits.length > 0 && allHits.length < page * pageSize) {
-        // 상태 체크 먼저 수행
         const isActive = await checkSessionStatus();
         if (!isActive || shouldStop) {
-          console.log(
-            '[ScrollSearch] Session became inactive, stopping scroll'
-          );
           await this.clearScroll(searchId);
           return { hits: [], total: 0, scrollId: undefined };
         }
-        // 스크롤 요청 수행
         const scrollResponse = await this.scroll(
           currentScrollId,
           scrollTime,
@@ -310,62 +267,54 @@ export class OpenSearchClient {
   }
 }
 // 로그 수집 관련 함수
-export async function makeOpenSearchRequest(path, method, body) {
-  const options = {
-    hostname: env.OPENSEARCH_URL.replace(/^http?:\/\//, ''),
-    port: Number(env.OPENSEARCH_PORT),
-    path,
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: 'Basic ' + Buffer.from('admin:admin').toString('base64'),
-    },
-  };
-  return new Promise((resolve, reject) => {
-    const req = http.request(options, (res) => {
-      let data = '';
-      res.on('data', (chunk) => {
-        data += chunk;
-      });
-      res.on('end', () => {
-        try {
-          if (res.statusCode && res.statusCode >= 400) {
-            console.error('OpenSearch request failed:', {
-              statusCode: res.statusCode,
-              data,
-              path,
-              method,
-            });
-            reject(
-              new Error(
-                `OpenSearch request failed with status ${res.statusCode}: ${data}`
-              )
-            );
-            return;
-          }
-          resolve(JSON.parse(data));
-        } catch (e) {
-          console.error('Failed to parse OpenSearch response:', e);
-          reject(e);
+export async function makeOpenSearchRequest(
+  path,
+  method,
+  body,
+  retryCount = 3
+) {
+  const client = OpenSearchClient.getInstance();
+  let lastError = null;
+  for (let attempt = 1; attempt <= retryCount; attempt++) {
+    try {
+      return await client.request({ path, method, body });
+    } catch (error) {
+      lastError = error;
+      console.error(
+        `OpenSearch request error (attempt ${attempt}/${retryCount}):`,
+        {
+          error,
+          path,
+          method,
         }
-      });
-    });
-    req.on('error', (e) => {
-      console.error('OpenSearch request error:', {
-        error: e,
-        path,
-        method,
-      });
-      reject(e);
-    });
-    // 타임아웃 처리
-    req.on('timeout', () => {
-      req.destroy();
-      reject(new Error('Request timeout'));
-    });
-    if (body) {
-      req.write(JSON.stringify(body));
+      );
+      if (
+        error instanceof Error &&
+        error.message.includes('index_not_found_exception')
+      ) {
+        return getEmptyResult(path);
+      }
+      if (attempt < retryCount) {
+        const delay = Math.min(1000 * attempt, 3000);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
     }
-    req.end();
-  });
+  }
+  throw lastError;
+}
+function getEmptyResult(path) {
+  // 요청 경로에 따라 적절한 빈 결과 반환
+  if (path.includes('/_count')) {
+    return { count: 0 };
+  }
+  if (path.includes('/_search')) {
+    return {
+      hits: {
+        total: { value: 0 },
+        hits: [],
+      },
+      aggregations: {},
+    };
+  }
+  return {};
 }

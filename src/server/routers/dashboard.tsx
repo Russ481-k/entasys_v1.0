@@ -22,14 +22,9 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.tz.setDefault('Asia/Seoul');
 
-const domains = [
-  'vision-seoul-fw-seoulfw_1',
-  'vision-seoul-fw-seoulfw_2',
-  'vision-seoul-fw-seoulfw_3',
-];
-
 // 전역 상수
 export const prisma = new PrismaClient();
+
 // 다운로드 파일 정리 함수
 async function cleanupDownloadFiles() {
   try {
@@ -302,8 +297,22 @@ interface Bucket {
 
 export const dashboardRouter = createTRPCRouter({
   getDomains: protectedProcedure()
+    .meta({
+      openapi: {
+        method: 'GET',
+        path: '/dashboard/domains',
+        protect: true,
+        tags: ['domains'],
+      },
+    })
+    .input(z.object({}))
     .output(z.object({ domains: z.array(z.string()) }))
     .query(async () => {
+      const activeDomains = await prisma.domain.findMany({
+        where: { isActive: true },
+        select: { name: true },
+      });
+      const domains = activeDomains.map((domain) => domain.name);
       return { domains };
     }),
   // 시스템 메트릭스 조회
@@ -354,221 +363,302 @@ export const dashboardRouter = createTRPCRouter({
 
       const currentHour = now.format('YYYY.MM.DD.HH');
 
+      // 활성화된 도메인 목록 조회
+      const activeDomains = await prisma.domain.findMany({
+        where: { isActive: true },
+        select: { name: true },
+      });
+      const domainNames = activeDomains.map((domain) => domain.name);
+
       // 초당 로그 수 계산
-      const logsPerSecondPromises = domains.map(async (domain) => {
-        const domainPattern = domain
-          .toLowerCase()
-          .replace(/\./g, '-')
-          .replace(/[^a-z0-9\-]/g, '_');
-        const result = await makeOpenSearchRequest<OpenSearchCountResponse>(
-          `/${currentHour}*_${domainPattern}/_count`,
-          'POST',
-          {
-            query: {
-              bool: {
-                must: [
-                  {
-                    range: {
-                      '@timestamp': {
-                        gte: oneMinuteAgo.toISOString(),
-                        lt: thirtySecondsAgo.toISOString(),
-                        time_zone: '+09:00',
+      const logsPerSecondPromises = domainNames.map(async (domain: string) => {
+        try {
+          const domainPattern = domain
+            .toLowerCase()
+            .replace(/\./g, '-')
+            .replace(/[^a-z0-9\-]/g, '_');
+          const result = await makeOpenSearchRequest<OpenSearchCountResponse>(
+            `/${currentHour}*_${domainPattern}/_count`,
+            'POST',
+            {
+              query: {
+                bool: {
+                  must: [
+                    {
+                      range: {
+                        '@timestamp': {
+                          gte: oneMinuteAgo.toISOString(),
+                          lt: thirtySecondsAgo.toISOString(),
+                          time_zone: '+09:00',
+                        },
                       },
                     },
-                  },
-                ],
+                  ],
+                },
               },
-            },
-          }
-        );
-        return !!result.count ? result.count / 60 : 0; // 60초 동안의 로그를 초당 평균으로 변환
+            }
+          );
+          return !!result.count ? result.count / 60 : 0;
+        } catch (error) {
+          console.error(
+            `Error fetching logs per second for domain ${domain}:`,
+            error
+          );
+          return 0;
+        }
       });
+
       // 일간 로그 수 계산
       const currentDate = now.format('YYYY.MM.DD');
-      const logsPerDayPromises = domains.map(async (domain) => {
-        const domainPattern = domain
-          .toLowerCase()
-          .replace(/\./g, '-')
-          .replace(/[^a-z0-9\-]/g, '_');
-        const indices = `${currentDate}*_${domainPattern}`;
+      const logsPerDayPromises = domainNames.map(async (domain: string) => {
+        try {
+          const domainPattern = domain
+            .toLowerCase()
+            .replace(/\./g, '-')
+            .replace(/[^a-z0-9\-]/g, '_');
+          const indices = `${currentDate}*_${domainPattern}`;
 
-        const result = await makeOpenSearchRequest<OpenSearchCountResponse>(
-          `/${indices}/_count`,
-          'GET'
-        );
-        return result.count ?? 0;
+          const result = await makeOpenSearchRequest<OpenSearchCountResponse>(
+            `/${indices}/_count`,
+            'GET'
+          );
+          return result.count ?? 0;
+        } catch (error) {
+          console.error(
+            `Error fetching logs per day for domain ${domain}:`,
+            error
+          );
+          return 0;
+        }
       });
 
       const logsPerSecond = await Promise.all(logsPerSecondPromises);
       const logsPerDay = await Promise.all(logsPerDayPromises);
 
       return {
-        logs_per_second: Math.round(logsPerSecond.reduce((a, b) => a + b, 0)),
-        logs_per_day: logsPerDay.reduce((a, b) => a + b, 0),
+        logs_per_second: Math.round(
+          logsPerSecond.reduce((a: number, b: number) => a + b, 0)
+        ),
+        logs_per_day: logsPerDay.reduce((a: number, b: number) => a + b, 0),
       };
     }),
 
   getChartMetrics: protectedProcedure().query(async () => {
     const now = dayjs().tz('Asia/Seoul');
 
-    // 시간별 데이터 (최근 24시간)
-    const hourlyResult =
-      await makeOpenSearchRequest<OpenSearchAggregationResponse>(
-        '/_search',
-        'POST',
-        {
-          size: 0,
-          query: {
-            range: {
-              '@timestamp': {
-                gte: now.subtract(24, 'hours').format(),
-                lte: now.format(),
-                time_zone: '+09:00',
-              },
-            },
-          },
-          aggs: {
-            logs_per_hour: {
-              date_histogram: {
-                field: '@timestamp',
-                fixed_interval: '1h',
-                time_zone: '+09:00',
-                format: 'yyyy-MM-dd HH:mm:ss',
-                extended_bounds: {
-                  min: now.subtract(24, 'hours').valueOf(),
-                  max: now.valueOf(),
+    // 활성화된 도메인 목록 조회
+    const activeDomains = await prisma.domain.findMany({
+      where: { isActive: true },
+      select: { name: true },
+    });
+    const domainNames = activeDomains.map((domain) => domain.name);
+
+    try {
+      // 시간별 데이터 (최근 24시간)
+      const hourlyResult =
+        await makeOpenSearchRequest<OpenSearchAggregationResponse>(
+          '/_search',
+          'POST',
+          {
+            size: 0,
+            query: {
+              range: {
+                '@timestamp': {
+                  gte: now.subtract(24, 'hours').format(),
+                  lte: now.format(),
+                  time_zone: '+09:00',
                 },
-                min_doc_count: 0,
               },
             },
-          },
-        }
-      );
-
-    // 일별 데이터 (최근 10일)
-    const dailyResult =
-      await makeOpenSearchRequest<OpenSearchAggregationResponse>(
-        '/_search',
-        'POST',
-        {
-          size: 0,
-          query: {
-            range: {
-              '@timestamp': {
-                gte: 'now-10d/d',
-                lte: 'now/d',
-                time_zone: '+09:00',
-              },
-            },
-          },
-          aggs: {
-            logs_per_day: {
-              date_histogram: {
-                field: '@timestamp',
-                calendar_interval: 'day',
-                time_zone: '+09:00',
-                format: 'yyyy-MM-dd',
-                extended_bounds: {
-                  min: 'now-10d/d',
-                  max: 'now/d',
+            aggs: {
+              logs_per_hour: {
+                date_histogram: {
+                  field: '@timestamp',
+                  fixed_interval: '1h',
+                  time_zone: '+09:00',
+                  format: 'yyyy-MM-dd HH:mm:ss',
+                  extended_bounds: {
+                    min: now.subtract(24, 'hours').valueOf(),
+                    max: now.valueOf(),
+                  },
+                  min_doc_count: 0,
                 },
-                min_doc_count: 0,
               },
             },
-          },
-        }
-      );
+          }
+        ).catch((error) => {
+          console.error('Error fetching hourly data:', error);
+          return { aggregations: { logs_per_hour: { buckets: [] } } };
+        });
 
-    // 월별 데이터 (최근 12개월)
-    const monthlyResult =
-      await makeOpenSearchRequest<OpenSearchAggregationResponse>(
-        '/_search',
-        'POST',
-        {
-          size: 0,
-          query: {
-            range: {
-              '@timestamp': {
-                gte: 'now-1y/M',
-                lte: 'now/M',
-                time_zone: '+09:00',
-              },
-            },
-          },
-          aggs: {
-            logs_per_month: {
-              date_histogram: {
-                field: '@timestamp',
-                calendar_interval: 'month',
-                time_zone: '+09:00',
-                format: 'yyyy-MM',
-                extended_bounds: {
-                  min: 'now-1y/M',
-                  max: 'now/M',
+      // 일별 데이터 (최근 10일)
+      const dailyResult =
+        await makeOpenSearchRequest<OpenSearchAggregationResponse>(
+          '/_search',
+          'POST',
+          {
+            size: 0,
+            query: {
+              range: {
+                '@timestamp': {
+                  gte: 'now-10d/d',
+                  lte: 'now/d',
+                  time_zone: '+09:00',
                 },
-                min_doc_count: 0,
               },
             },
-          },
+            aggs: {
+              logs_per_day: {
+                date_histogram: {
+                  field: '@timestamp',
+                  calendar_interval: 'day',
+                  time_zone: '+09:00',
+                  format: 'yyyy-MM-dd',
+                  extended_bounds: {
+                    min: 'now-10d/d',
+                    max: 'now/d',
+                  },
+                  min_doc_count: 0,
+                },
+              },
+            },
+          }
+        ).catch((error) => {
+          console.error('Error fetching daily data:', error);
+          return { aggregations: { logs_per_day: { buckets: [] } } };
+        });
+
+      // 월별 데이터 (최근 12개월)
+      const monthlyResult =
+        await makeOpenSearchRequest<OpenSearchAggregationResponse>(
+          '/_search',
+          'POST',
+          {
+            size: 0,
+            query: {
+              range: {
+                '@timestamp': {
+                  gte: 'now-1y/M',
+                  lte: 'now/M',
+                  time_zone: '+09:00',
+                },
+              },
+            },
+            aggs: {
+              logs_per_month: {
+                date_histogram: {
+                  field: '@timestamp',
+                  calendar_interval: 'month',
+                  time_zone: '+09:00',
+                  format: 'yyyy-MM',
+                  extended_bounds: {
+                    min: 'now-1y/M',
+                    max: 'now/M',
+                  },
+                  min_doc_count: 0,
+                },
+              },
+            },
+          }
+        ).catch((error) => {
+          console.error('Error fetching monthly data:', error);
+          return { aggregations: { logs_per_month: { buckets: [] } } };
+        });
+
+      // 도메인별 월간 데이터 (최근 12개월)
+      const domainMonthlyPromises = domainNames.map(async (domain: string) => {
+        try {
+          const domainPattern = domain
+            .toLowerCase()
+            .replace(/\./g, '-')
+            .replace(/[^a-z0-9\-]/g, '_');
+
+          // 최근 12개월의 데이터를 가져오기
+          const monthlyPromises = Array.from({ length: 12 }, async (_, i) => {
+            try {
+              const targetMonth = now.subtract(11 - i, 'months');
+              const monthPattern = targetMonth.format('YYYY.MM');
+
+              const result =
+                await makeOpenSearchRequest<OpenSearchCountResponse>(
+                  `/${monthPattern}*_${domainPattern}*/_count`,
+                  'GET'
+                );
+
+              return {
+                time: targetMonth.format('YYYY-MM'),
+                total: result.count ?? 0,
+              };
+            } catch (error) {
+              console.error(
+                `Error fetching monthly data for domain ${domain}:`,
+                error
+              );
+              return {
+                time: now.subtract(11 - i, 'months').format('YYYY-MM'),
+                total: 0,
+              };
+            }
+          });
+
+          const monthlyData = await Promise.all(monthlyPromises);
+
+          return {
+            domain,
+            data: monthlyData,
+          };
+        } catch (error) {
+          console.error(`Error processing domain ${domain}:`, error);
+          return {
+            domain,
+            data: Array.from({ length: 12 }, (_, i) => ({
+              time: now.subtract(11 - i, 'months').format('YYYY-MM'),
+              total: 0,
+            })),
+          };
         }
-      );
-
-    // 도메인별 월간 데이터 (최근 12개월)
-    const domainMonthlyPromises = domains.map(async (domain) => {
-      const domainPattern = domain
-        .toLowerCase()
-        .replace(/\./g, '-')
-        .replace(/[^a-z0-9\-]/g, '_');
-
-      // 최근 12개월의 데이터를 가져오기
-      const monthlyPromises = Array.from({ length: 12 }, async (_, i) => {
-        const targetMonth = now.subtract(11 - i, 'months');
-        const monthPattern = targetMonth.format('YYYY.MM');
-
-        const result = await makeOpenSearchRequest<OpenSearchCountResponse>(
-          `/${monthPattern}*_${domainPattern}*/_count`,
-          'GET'
-        );
-
-        return {
-          time: targetMonth.format('YYYY-MM'),
-          total: result.count ?? 0,
-        };
       });
 
-      const monthlyData = await Promise.all(monthlyPromises);
-
+      const domainMonthlyResults = await Promise.all(domainMonthlyPromises);
       return {
-        domain,
-        data: monthlyData,
+        hourly_totals:
+          hourlyResult.aggregations.logs_per_hour?.buckets.map(
+            (bucket: Bucket) => ({
+              time: bucket.key_as_string,
+              total: bucket.doc_count,
+            })
+          ) || [],
+        last_10_days_daily_totals:
+          dailyResult.aggregations.logs_per_day?.buckets.map(
+            (bucket: Bucket) => ({
+              time: bucket.key_as_string,
+              total: bucket.doc_count,
+            })
+          ) || [],
+        monthly_totals:
+          monthlyResult.aggregations.logs_per_month?.buckets.map(
+            (bucket: Bucket) => ({
+              time: bucket.key_as_string,
+              total: bucket.doc_count,
+            })
+          ) || [],
+        domain_monthly_totals: domainMonthlyResults,
       };
-    });
-
-    const domainMonthlyResults = await Promise.all(domainMonthlyPromises);
-    return {
-      hourly_totals:
-        hourlyResult.aggregations.logs_per_hour?.buckets.map(
-          (bucket: Bucket) => ({
-            time: bucket.key_as_string,
-            total: bucket.doc_count,
-          })
-        ) || [],
-      last_10_days_daily_totals:
-        dailyResult.aggregations.logs_per_day?.buckets.map(
-          (bucket: Bucket) => ({
-            time: bucket.key_as_string,
-            total: bucket.doc_count,
-          })
-        ) || [],
-      monthly_totals:
-        monthlyResult.aggregations.logs_per_month?.buckets.map(
-          (bucket: Bucket) => ({
-            time: bucket.key_as_string,
-            total: bucket.doc_count,
-          })
-        ) || [],
-      domain_monthly_totals: domainMonthlyResults,
-    };
+    } catch (error) {
+      console.error('Error in getChartMetrics:', error);
+      return {
+        hourly_totals: [],
+        last_10_days_daily_totals: [],
+        monthly_totals: [],
+        domain_monthly_totals: domainNames.map((domain) => ({
+          domain,
+          data: Array.from({ length: 12 }, (_, i) => ({
+            time: now.subtract(11 - i, 'months').format('YYYY-MM'),
+            total: 0,
+          })),
+        })),
+      };
+    }
   }),
 });
 

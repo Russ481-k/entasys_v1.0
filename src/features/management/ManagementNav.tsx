@@ -3,6 +3,7 @@ import React from 'react';
 import { usePathname } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { LuUsers } from 'react-icons/lu';
+import { TbWorld } from 'react-icons/tb';
 
 import { Nav, NavGroup, NavItem } from '@/components/Nav';
 import { LinkAdmin } from '@/features/admin/LinkAdmin';
@@ -22,6 +23,14 @@ export const AdminNav = () => {
           icon={LuUsers}
         >
           {t('management:nav.users')}
+        </NavItem>
+        <NavItem
+          as={LinkAdmin}
+          href="/management/domains"
+          isActive={isActive(`${ADMIN_PATH}/management/domains`)}
+          icon={TbWorld}
+        >
+          {t('management:nav.domains')}
         </NavItem>
         {/* add menu NavItem */}
         {/* <NavItem

@@ -1,0 +1,57 @@
+{
+  "list": {
+    "title": "도메인 관리",
+    "description": "시스템에서 사용되는 도메인을 관리합니다.",
+    "actions": {
+      "create": "도메인 추가"
+    },
+    "loading": "도메인 목록을 불러오는 중...",
+    "empty": "등록된 도메인이 없습니다."
+  },
+  "create": {
+    "title": "도메인 추가",
+    "description": "새로운 도메인을 추가합니다."
+  },
+  "update": {
+    "title": "도메인 수정",
+    "description": "도메인 정보를 수정합니다.",
+    "loading": "도메인 정보를 불러오는 중..."
+  },
+  "delete": {
+    "title": "도메인 삭제",
+    "description": "이 도메인을 삭제하시겠습니까?",
+    "action": "삭제"
+  },
+  "data": {
+    "id": {
+      "label": "ID",
+      "required": "ID를 입력해주세요."
+    },
+    "name": {
+      "label": "도메인 이름",
+      "required": "도메인 이름을 입력해주세요.",
+      "invalid": "올바른 도메인 이름을 입력해주세요."
+    },
+    "description": {
+      "label": "설명"
+    },
+    "isActive": {
+      "label": "활성화"
+    },
+    "status": {
+      "label": "상태",
+      "active": "활성",
+      "inactive": "비활성"
+    },
+    "actions": {
+      "label": "작업"
+    }
+  },
+  "actions": {
+    "edit": "수정",
+    "delete": "삭제"
+  },
+  "form": {
+    "submit": "저장"
+  }
+} 

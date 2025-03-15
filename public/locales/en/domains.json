@@ -1,0 +1,57 @@
+{
+  "list": {
+    "title": "Domain Management",
+    "description": "Manage domains used in the system.",
+    "actions": {
+      "create": "Add Domain"
+    },
+    "loading": "Loading domain list...",
+    "empty": "No domains registered."
+  },
+  "create": {
+    "title": "Add Domain",
+    "description": "Add a new domain."
+  },
+  "update": {
+    "title": "Edit Domain",
+    "description": "Edit domain information.",
+    "loading": "Loading domain information..."
+  },
+  "delete": {
+    "title": "Delete Domain",
+    "description": "Are you sure you want to delete this domain?",
+    "action": "Delete"
+  },
+  "data": {
+    "id": {
+      "label": "ID",
+      "required": "Please enter an ID."
+    },
+    "name": {
+      "label": "Domain Name",
+      "required": "Please enter a domain name.",
+      "invalid": "Please enter a valid domain name."
+    },
+    "description": {
+      "label": "Description"
+    },
+    "isActive": {
+      "label": "Active"
+    },
+    "status": {
+      "label": "Status",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "actions": {
+      "label": "Actions"
+    }
+  },
+  "actions": {
+    "edit": "Edit",
+    "delete": "Delete"
+  },
+  "form": {
+    "submit": "Save"
+  }
+} 

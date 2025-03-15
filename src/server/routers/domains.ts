@@ -1,0 +1,214 @@
+import { Prisma } from '@prisma/client';
+import { TRPCError } from '@trpc/server';
+import { z } from 'zod';
+
+import { ExtendedTRPCError } from '@/server/config/errors';
+import { createTRPCRouter, protectedProcedure } from '@/server/config/trpc';
+
+const zDomain = z.object({
+  id: z.string(),
+  name: z.string().min(1),
+  description: z.string().nullable(),
+  isActive: z.boolean(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+
+const zDomainCreate = zDomain.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+const zDomainUpdate = zDomainCreate.partial();
+
+export const domainsRouter = createTRPCRouter({
+  getDomainById: protectedProcedure({
+    authorizations: ['ADMIN', 'SYSTEM_ADMIN'],
+  })
+    .meta({
+      openapi: {
+        method: 'GET',
+        path: '/domains/{id}',
+        protect: true,
+        tags: ['domains'],
+      },
+    })
+    .input(
+      z.object({
+        id: z.string(),
+      })
+    )
+    .output(zDomain)
+    .query(async ({ ctx, input }) => {
+      ctx.logger.info('Getting domain');
+      const domain = await ctx.db.domain.findUnique({
+        where: { id: input.id },
+      });
+
+      if (!domain) {
+        ctx.logger.warn('Unable to find domain with the provided input');
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+        });
+      }
+
+      return domain;
+    }),
+
+  getDomains: protectedProcedure({ authorizations: ['ADMIN', 'SYSTEM_ADMIN'] })
+    .meta({
+      openapi: {
+        method: 'GET',
+        path: '/domains',
+        protect: true,
+        tags: ['domains'],
+      },
+    })
+    .input(
+      z.object({
+        searchTerm: z.string().optional(),
+        cursor: z.string().optional(),
+        limit: z.number().min(1).max(100).default(10),
+      })
+    )
+    .output(
+      z.object({
+        items: z.array(zDomain),
+        nextCursor: z.string().nullish(),
+        total: z.number(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const where = input.searchTerm
+        ? {
+            OR: [
+              {
+                name: {
+                  contains: input.searchTerm,
+                  mode: Prisma.QueryMode.insensitive,
+                },
+              },
+              {
+                description: {
+                  contains: input.searchTerm,
+                  mode: Prisma.QueryMode.insensitive,
+                },
+              },
+            ],
+          }
+        : {};
+
+      const [total, items] = await Promise.all([
+        ctx.db.domain.count({ where }),
+        ctx.db.domain.findMany({
+          where,
+          take: input.limit + 1,
+          cursor: input.cursor ? { id: input.cursor } : undefined,
+          orderBy: { createdAt: 'desc' },
+        }),
+      ]);
+
+      let nextCursor: typeof input.cursor = undefined;
+      if (items.length > input.limit) {
+        const nextItem = items.pop();
+        nextCursor = nextItem?.id;
+      }
+
+      return {
+        items,
+        nextCursor,
+        total,
+      };
+    }),
+
+  createDomain: protectedProcedure({
+    authorizations: ['ADMIN', 'SYSTEM_ADMIN'],
+  })
+    .meta({
+      openapi: {
+        method: 'POST',
+        path: '/domains',
+        protect: true,
+        tags: ['domains'],
+      },
+    })
+    .input(zDomainCreate)
+    .output(zDomain)
+    .mutation(async ({ ctx, input }) => {
+      try {
+        return await ctx.db.domain.create({
+          data: input,
+        });
+      } catch (error) {
+        throw new ExtendedTRPCError({
+          code: 'BAD_REQUEST',
+          cause: error,
+        });
+      }
+    }),
+
+  updateDomain: protectedProcedure({
+    authorizations: ['ADMIN', 'SYSTEM_ADMIN'],
+  })
+    .meta({
+      openapi: {
+        method: 'PATCH',
+        path: '/domains/{id}',
+        protect: true,
+        tags: ['domains'],
+      },
+    })
+    .input(
+      z.object({
+        id: z.string(),
+        ...zDomainUpdate.shape,
+      })
+    )
+    .output(zDomain)
+    .mutation(async ({ ctx, input }) => {
+      const { id, ...data } = input;
+
+      try {
+        return await ctx.db.domain.update({
+          where: { id },
+          data,
+        });
+      } catch (error) {
+        throw new ExtendedTRPCError({
+          code: 'BAD_REQUEST',
+          cause: error,
+        });
+      }
+    }),
+
+  deleteDomain: protectedProcedure({
+    authorizations: ['ADMIN', 'SYSTEM_ADMIN'],
+  })
+    .meta({
+      openapi: {
+        method: 'DELETE',
+        path: '/domains/{id}',
+        protect: true,
+        tags: ['domains'],
+      },
+    })
+    .input(
+      z.object({
+        id: z.string(),
+      })
+    )
+    .output(zDomain)
+    .mutation(async ({ ctx, input }) => {
+      try {
+        return await ctx.db.domain.delete({
+          where: { id: input.id },
+        });
+      } catch (error) {
+        throw new ExtendedTRPCError({
+          code: 'BAD_REQUEST',
+          cause: error,
+        });
+      }
+    }),
+});

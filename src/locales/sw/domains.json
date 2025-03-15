@@ -1,0 +1,85 @@
+{
+  "title": "Usimamizi wa Vikoa",
+  "description": "Simamia vikoa na mipangilio",
+  "actions": {
+    "create": "Unda Eneo",
+    "edit": "Hariri Eneo",
+    "delete": "Futa Eneo"
+  },
+  "fields": {
+    "name": "Jina la Eneo",
+    "description": "Maelezo",
+    "status": "Hali",
+    "createdAt": "Imeundwa Tarehe",
+    "updatedAt": "Imesasishwa Tarehe"
+  },
+  "messages": {
+    "createSuccess": "Eneo limeundwa kwa mafanikio",
+    "updateSuccess": "Eneo limesasishwa kwa mafanikio",
+    "deleteSuccess": "Eneo limefutwa kwa mafanikio",
+    "error": "Hitilafu imetokea"
+  },
+  "data": {
+    "id": {
+      "label": "Kitambulisho",
+      "required": "Kitambulisho kinahitajika"
+    },
+    "name": {
+      "label": "Jina la Eneo",
+      "required": "Jina la eneo linahitajika"
+    },
+    "description": {
+      "label": "Maelezo"
+    },
+    "isActive": {
+      "label": "Inafanya kazi"
+    },
+    "status": {
+      "label": "Hali",
+      "active": "Inafanya kazi",
+      "inactive": "Haifanyi kazi"
+    },
+    "actions": {
+      "label": "Vitendo"
+    },
+    "createdAt": {
+      "ago": "Imeundwa <dateAgo />"
+    }
+  },
+  "form": {
+    "submit": "Hifadhi"
+  },
+  "list": {
+    "title": "Vikoa",
+    "description": "Simamia vikoa vinavyotumika kwenye mfumo",
+    "actions": {
+      "create": "Unda Eneo"
+    },
+    "loading": "Inapakia vikoa...",
+    "empty": "Hakuna vikoa vilivyopatikana",
+    "loadMore": {
+      "button": "Pakia Zaidi",
+      "display": "Inaonyesha {{loaded}} kati ya vikoa {{total}}"
+    }
+  },
+  "create": {
+    "title": "Unda Eneo",
+    "description": "Unda eneo jipya",
+    "action": {
+      "save": "Unda Eneo"
+    }
+  },
+  "update": {
+    "title": "Sasisha Eneo",
+    "description": "Sasisha taarifa za eneo",
+    "loading": "Inapakia taarifa za eneo...",
+    "action": {
+      "save": "Hifadhi Mabadiliko"
+    }
+  },
+  "delete": {
+    "title": "Futa Eneo",
+    "description": "Je, una uhakika unataka kufuta eneo hili?",
+    "action": "Futa Eneo"
+  }
+}

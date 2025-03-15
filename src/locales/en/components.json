@@ -43,6 +43,15 @@
       "description": "Something went wrong 😞"
     }
   },
+  "errors": {
+    "domain": {
+      "notFound": "Domain not found",
+      "alreadyExists": "Domain already exists",
+      "validationError": "Invalid domain data",
+      "updateError": "Failed to update domain",
+      "deleteError": "Failed to delete domain"
+    }
+  },
   "pagination": {
     "showing": "<box>Showing</box> <strong>{{firstItemOnPage}}</strong> <span>to</span> <strong>{{lastItemOnPage}}</strong> <span>of</span> <strong>{{totalItems}}</strong> <box>results</box>",
     "loading": "<spinner></spinner> <box>Loading</box> <strong>{{firstItemOnPage}}</strong> <span>to</span> <strong>{{lastItemOnPage}}</strong> <span>of</span> <strong>{{totalItems}}</strong> <box>results</box>",

@@ -1,0 +1,85 @@
+{
+  "title": "Domain Management",
+  "description": "Manage domains and settings",
+  "actions": {
+    "create": "Create Domain",
+    "edit": "Edit Domain",
+    "delete": "Delete Domain"
+  },
+  "fields": {
+    "name": "Domain Name",
+    "description": "Description",
+    "status": "Status",
+    "createdAt": "Created At",
+    "updatedAt": "Updated At"
+  },
+  "messages": {
+    "createSuccess": "Domain created successfully",
+    "updateSuccess": "Domain updated successfully",
+    "deleteSuccess": "Domain deleted successfully",
+    "error": "An error occurred"
+  },
+  "data": {
+    "id": {
+      "label": "ID",
+      "required": "ID is required"
+    },
+    "name": {
+      "label": "Domain Name",
+      "required": "Domain name is required"
+    },
+    "description": {
+      "label": "Description"
+    },
+    "isActive": {
+      "label": "Active"
+    },
+    "status": {
+      "label": "Status",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "actions": {
+      "label": "Actions"
+    },
+    "createdAt": {
+      "ago": "Created <dateAgo />"
+    }
+  },
+  "form": {
+    "submit": "Save"
+  },
+  "list": {
+    "title": "Domains",
+    "description": "Manage domains used in the system",
+    "actions": {
+      "create": "Create Domain"
+    },
+    "loading": "Loading domains...",
+    "empty": "No domains found",
+    "loadMore": {
+      "button": "Load More",
+      "display": "Showing {{loaded}} of {{total}} domains"
+    }
+  },
+  "create": {
+    "title": "Create Domain",
+    "description": "Create a new domain",
+    "action": {
+      "save": "Create Domain"
+    }
+  },
+  "update": {
+    "title": "Update Domain",
+    "description": "Update domain information",
+    "loading": "Loading domain information...",
+    "action": {
+      "save": "Save Changes"
+    }
+  },
+  "delete": {
+    "title": "Delete Domain",
+    "description": "Are you sure you want to delete this domain?",
+    "action": "Delete Domain"
+  }
+}
