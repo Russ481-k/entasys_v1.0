@@ -42,6 +42,7 @@ export class OpenSearchClient {
     const options = Object.assign(Object.assign({}, this.baseOptions), {
       path,
       method,
+      timeout: 30000,
     });
     return new Promise((resolve, reject) => {
       console.log('[OpenSearch] Request details:', {
@@ -52,6 +53,11 @@ export class OpenSearchClient {
       });
       const req = http.request(options, (res) => {
         let data = '';
+        // 타임아웃 설정
+        res.setTimeout(30000, () => {
+          req.destroy();
+          reject(new Error('Response timeout'));
+        });
         res.on('data', (chunk) => {
           data += chunk;
         });
@@ -78,6 +84,11 @@ export class OpenSearchClient {
             reject(new Error(`Failed to parse OpenSearch response: ${e}`));
           }
         });
+      });
+      // 요청 타임아웃 설정
+      req.setTimeout(30000, () => {
+        req.destroy();
+        reject(new Error('Request timeout'));
       });
       req.on('error', (e) => {
         console.error('[OpenSearch] Network error:', {
