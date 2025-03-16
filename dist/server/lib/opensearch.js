@@ -265,6 +265,142 @@ export class OpenSearchClient {
       throw error;
     }
   }
+  async updateIndexTemplate(domainName) {
+    const templateName = `template_${domainName.toLowerCase()}`;
+    return this.request({
+      path: `/_index_template/${templateName}`,
+      method: 'PUT',
+      body: {
+        index_patterns: [`*_${domainName.toLowerCase()}_*`],
+        template: {
+          settings: {
+            number_of_shards: 1,
+            number_of_replicas: 0,
+            refresh_interval: '30s',
+            'plugins.index_state_management.policy_id': 'logs_policy',
+            'plugins.index_state_management.rollover_alias': `alias_${domainName.toLowerCase()}`,
+          },
+        },
+      },
+    });
+  }
+  async deleteIndexTemplate(domainName) {
+    try {
+      const templateName = `template_${domainName.toLowerCase()}`;
+      return await this.request({
+        path: `/_index_template/${templateName}`,
+        method: 'DELETE',
+      });
+    } catch (error) {
+      // 템플릿이 없는 경우 성공으로 처리
+      if (
+        error instanceof Error &&
+        error.message.includes('index_template_missing')
+      ) {
+        return { acknowledged: true };
+      }
+      throw error;
+    }
+  }
+  async createILMPolicy() {
+    return this.request({
+      path: '/_plugins/_ism/policies/logs_policy',
+      method: 'PUT',
+      body: {
+        policy: {
+          description: 'Hot-Warm-Cold-Delete workflow for logs',
+          default_state: 'hot',
+          states: [
+            {
+              name: 'hot',
+              actions: [
+                {
+                  rollover: {
+                    min_doc_count: 5000000,
+                    min_size: '50gb',
+                    min_index_age: '1d',
+                  },
+                },
+              ],
+              transitions: [
+                {
+                  state_name: 'warm',
+                  conditions: {
+                    min_index_age: '2d',
+                  },
+                },
+              ],
+            },
+            {
+              name: 'warm',
+              actions: [
+                {
+                  replica_count: {
+                    number_of_replicas: 0,
+                  },
+                },
+                {
+                  force_merge: {
+                    max_num_segments: 1,
+                  },
+                },
+              ],
+              transitions: [
+                {
+                  state_name: 'cold',
+                  conditions: {
+                    min_index_age: '7d',
+                  },
+                },
+              ],
+            },
+            {
+              name: 'cold',
+              actions: [
+                {
+                  read_only: {},
+                },
+              ],
+              transitions: [
+                {
+                  state_name: 'delete',
+                  conditions: {
+                    min_index_age: '30d',
+                  },
+                },
+              ],
+            },
+            {
+              name: 'delete',
+              actions: [
+                {
+                  delete: {},
+                },
+              ],
+            },
+          ],
+        },
+      },
+    });
+  }
+  async getIndices(pattern) {
+    return this.request({
+      path: `/_cat/indices/${pattern || '*'}?format=json`,
+      method: 'GET',
+    });
+  }
+  async closeIndices(pattern) {
+    return this.request({
+      path: `/${pattern}/_close`,
+      method: 'POST',
+    });
+  }
+  async deleteIndices(pattern) {
+    return this.request({
+      path: `/${pattern}`,
+      method: 'DELETE',
+    });
+  }
 }
 // 로그 수집 관련 함수
 export async function makeOpenSearchRequest(

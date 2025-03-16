@@ -144,6 +144,8 @@ export async function searchOpenSearchWithScroll({
           hits: result.hits,
         },
         _scroll_id: result.scrollId || '',
+        took: 0,
+        timed_out: false,
       },
       scrollResponse: result.hits,
     };

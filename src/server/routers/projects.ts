@@ -9,7 +9,10 @@ import { z } from 'zod';
 import { getColumnNames } from '@/features/monitoring/columns';
 import { zPaloLogs, zPaloLogsParams } from '@/features/monitoring/schemas';
 import { createTRPCRouter, protectedProcedure } from '@/server/config/trpc';
-import { OpenSearchClient, OpenSearchResponse } from '@/server/lib/opensearch';
+import {
+  OpenSearchClient,
+  OpenSearchScrollResponse,
+} from '@/server/lib/opensearch';
 import {
   buildOpenSearchQuery,
   parseWhereClause,
@@ -80,7 +83,7 @@ export async function searchOpenSearchWithScroll({
     status: string;
   }) => void;
 }): Promise<{
-  initialResponse: OpenSearchResponse;
+  initialResponse: OpenSearchScrollResponse;
   scrollResponse: OpenSearchHit[];
 }> {
   const client = OpenSearchClient.getInstance();
@@ -184,6 +187,8 @@ export async function searchOpenSearchWithScroll({
           hits: result.hits as OpenSearchHit[],
         },
         _scroll_id: result.scrollId || '',
+        took: 0,
+        timed_out: false,
       },
       scrollResponse: result.hits as OpenSearchHit[],
     };

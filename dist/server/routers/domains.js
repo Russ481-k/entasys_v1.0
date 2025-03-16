@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { ExtendedTRPCError } from '@/server/config/errors';
 import { createTRPCRouter, protectedProcedure } from '@/server/config/trpc';
+import { OpenSearchClient } from '@/server/lib/opensearch';
 
 var __rest =
   (this && this.__rest) ||
@@ -146,10 +147,38 @@ export const domainsRouter = createTRPCRouter({
     .output(zDomain)
     .mutation(async ({ ctx, input }) => {
       try {
-        return await ctx.db.domain.create({
+        // Check if domain name already exists
+        const existingDomain = await ctx.db.domain.findUnique({
+          where: { name: input.name },
+        });
+        if (existingDomain) {
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: `Domain name "${input.name}" already exists`,
+          });
+        }
+        // Create domain in database
+        const domain = await ctx.db.domain.create({
           data: input,
         });
+        // Create OpenSearch index template and ILM policy
+        const opensearch = OpenSearchClient.getInstance();
+        await opensearch.createILMPolicy();
+        await opensearch.updateIndexTemplate(domain.name);
+        return domain;
       } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002'
+        ) {
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: `Domain name "${input.name}" already exists`,
+          });
+        }
         throw new ExtendedTRPCError({
           code: 'BAD_REQUEST',
           cause: error,
@@ -173,10 +202,27 @@ export const domainsRouter = createTRPCRouter({
       const { id } = input,
         data = __rest(input, ['id']);
       try {
-        return await ctx.db.domain.update({
+        // Get old domain name
+        const oldDomain = await ctx.db.domain.findUnique({
+          where: { id },
+        });
+        if (!oldDomain) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+          });
+        }
+        // Update domain in database
+        const updatedDomain = await ctx.db.domain.update({
           where: { id },
           data,
         });
+        // If domain name changed, update OpenSearch template
+        if (data.name && oldDomain.name !== data.name) {
+          const opensearch = OpenSearchClient.getInstance();
+          await opensearch.deleteIndexTemplate(oldDomain.name);
+          await opensearch.updateIndexTemplate(data.name);
+        }
+        return updatedDomain;
       } catch (error) {
         throw new ExtendedTRPCError({
           code: 'BAD_REQUEST',
@@ -195,17 +241,33 @@ export const domainsRouter = createTRPCRouter({
         tags: ['domains'],
       },
     })
-    .input(
-      z.object({
-        id: z.string(),
-      })
-    )
+    .input(z.object({ id: z.string() }))
     .output(zDomain)
     .mutation(async ({ ctx, input }) => {
       try {
-        return await ctx.db.domain.delete({
+        // Get domain name before deletion
+        const domain = await ctx.db.domain.findUnique({
           where: { id: input.id },
         });
+        if (!domain) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+          });
+        }
+        // Delete domain from database
+        const deletedDomain = await ctx.db.domain.delete({
+          where: { id: input.id },
+        });
+        // Delete OpenSearch template and indices
+        const opensearch = OpenSearchClient.getInstance();
+        await opensearch.deleteIndexTemplate(domain.name);
+        // Delete all indices related to this domain
+        const pattern = `*_${domain.name.toLowerCase()}_*`;
+        const indices = await opensearch.getIndices(pattern);
+        if (indices.length > 0) {
+          await opensearch.deleteIndices(pattern);
+        }
+        return deletedDomain;
       } catch (error) {
         throw new ExtendedTRPCError({
           code: 'BAD_REQUEST',

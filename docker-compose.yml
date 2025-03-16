@@ -66,23 +66,23 @@ services:
       - discovery.type=single-node
       - OPENSEARCH_INITIAL_ADMIN_PASSWORD=PaloLog2024!@#$
       - plugins.security.disabled=true
-      - 'OPENSEARCH_JAVA_OPTS=-Xms12g -Xmx12g'
+      - 'OPENSEARCH_JAVA_OPTS=-Xms10g -Xmx10g'
       - bootstrap.memory_lock=true
       - TZ=Asia/Seoul
-      - 'search.max_open_scroll_context=1000'
-      - 'indices.memory.index_buffer_size=20%'
-      - 'indices.queries.cache.size=15%'
-      - 'thread_pool.write.queue_size=1000'
-      - 'thread_pool.search.queue_size=1000'
-      - 'indices.fielddata.cache.size=20%'
-      - 'indices.recovery.max_bytes_per_sec=100mb'
-      - 'cluster.routing.allocation.disk.threshold_enabled=false'
+      - 'cluster.routing.allocation.disk.threshold_enabled=true'
+      - 'cluster.routing.allocation.disk.watermark.low=85%'
+      - 'cluster.routing.allocation.disk.watermark.high=90%'
+      - 'cluster.routing.allocation.disk.watermark.flood_stage=95%'
+      - 'cluster.max_shards_per_node=600'
       - 'http.max_content_length=500mb'
       - 'http.compression=true'
-      - 'search.default_search_timeout=30s'
+      - 'search.max_open_scroll_context=2000'
       - 'search.max_buckets=100000'
-      - 'thread_pool.search.size=12'
-      - 'thread_pool.search.max_queue_size=2000'
+      - 'search.default_search_timeout=30s'
+      - 'thread_pool.search.size=16'
+      - 'thread_pool.write.size=8'
+      - 'action.auto_create_index=true'
+      - 'action.destructive_requires_name=true'
     volumes:
       - opensearch-data:/usr/share/opensearch/data
       - ./certs:/usr/share/opensearch/config/certs
@@ -114,35 +114,36 @@ services:
     ports:
       - '514:514/udp'
     environment:
-      LS_JAVA_OPTS: '-Xms8g -Xmx8g'
-      pipeline.batch.size: '50000'
-      pipeline.workers: '12'
-      pipeline.batch.delay: '3'
-      pipeline.io_threads: '6'
-      pipeline.ordered: 'false'
-      pipeline.unsafe_shutdown: 'true'
-      pipeline.ecs_compatibility: disabled
-      queue.type: memory
-      queue.max_bytes: '16gb'
-      queue.checkpoint.writes: '50000'
-      queue.checkpoint.acks: '50000'
-      queue.checkpoint.interval: '1000'
-      queue.page_capacity: '512mb'
-      queue.max_pages: 8
-      queue.max_events: '50000'
-      queue.drain: 'true'
-      TZ: Asia/Seoul
+      - 'LS_JAVA_OPTS=-Xms8g -Xmx8g'
+      - 'pipeline.batch.size=5000'
+      - 'pipeline.workers=6'
+      - 'pipeline.batch.delay=25'
+      - 'pipeline.io_threads=4'
+      - 'pipeline.ordered=false'
+      - 'pipeline.unsafe_shutdown=true'
+      - 'pipeline.ecs_compatibility=disabled'
+      - 'queue.type=memory'
+      - 'queue.max_bytes=2gb'
+      - 'queue.checkpoint.writes=5000'
+      - 'queue.checkpoint.acks=5000'
+      - 'queue.checkpoint.interval=1000'
+      - 'queue.page_capacity=250mb'
+      - 'queue.max_pages=4'
+      - 'queue.max_events=5000'
+      - 'queue.drain=true'
+      - 'TZ=Asia/Seoul'
     deploy:
       resources:
         limits:
-          cpus: '6'
-          memory: '12G'
+          cpus: '8'
+          memory: '10G'
         reservations:
           cpus: '4'
-          memory: '8G'
+          memory: '6G'
     volumes:
       - ./logstash/pipeline:/usr/share/logstash/pipeline
     command: logstash -f /usr/share/logstash/pipeline/logstash.conf --config.reload.automatic
+    user: root # 임시로 root로 실행
     ulimits:
       memlock:
         soft: -1
@@ -153,7 +154,7 @@ services:
       nproc:
         soft: 65535
         hard: 65535
-    shm_size: '2gb'
+    shm_size: '4gb'
 
 networks:
   palolog:
@@ -161,3 +162,5 @@ networks:
 
 volumes:
   opensearch-data:
+  logstash-data:
+  logstash-logs:

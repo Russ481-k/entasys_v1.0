@@ -328,11 +328,7 @@ export const dashboardRouter = createTRPCRouter({
       const logsPerDayPromises = domainNames.map(async (domain) => {
         var _a;
         try {
-          const domainPattern = domain
-            .toLowerCase()
-            .replace(/\./g, '-')
-            .replace(/[^a-z0-9\-]/g, '_');
-          const indices = `${currentDate}*_${domainPattern}`;
+          const indices = `${currentDate}*_${domain}`;
           const result = await makeOpenSearchRequest(
             `/${indices}/_count`,
             'GET'
@@ -459,10 +455,6 @@ export const dashboardRouter = createTRPCRouter({
       // 도메인별 월간 데이터 (최근 12개월)
       const domainMonthlyPromises = domainNames.map(async (domain) => {
         try {
-          const domainPattern = domain
-            .toLowerCase()
-            .replace(/\./g, '-')
-            .replace(/[^a-z0-9\-]/g, '_');
           // 최근 12개월의 데이터를 가져오기
           const monthlyPromises = Array.from({ length: 12 }, async (_, i) => {
             var _a;
@@ -470,7 +462,7 @@ export const dashboardRouter = createTRPCRouter({
               const targetMonth = now.subtract(11 - i, 'months');
               const monthPattern = targetMonth.format('YYYY.MM');
               const result = await makeOpenSearchRequest(
-                `/${monthPattern}*_${domainPattern}*/_count`,
+                `/${monthPattern}*_${domain}*/_count`,
                 'GET'
               );
               return {
