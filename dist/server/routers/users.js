@@ -27,6 +27,23 @@ export const usersRouter = createTRPCRouter({
       ctx.logger.info('Getting user');
       const user = await ctx.db.user.findUnique({
         where: { id: input.id },
+        select: {
+          id: true,
+          password: true,
+          createdAt: true,
+          updatedAt: true,
+          name: true,
+          email: true,
+          accountStatus: true,
+          image: true,
+          authorizations: true,
+          language: true,
+          lastLoginAt: true,
+          createdBy: true,
+          createdIp: true,
+          updatedBy: true,
+          updatedIp: true,
+        },
       });
       if (!user) {
         ctx.logger.warn('Unable to find user with the provided input');
@@ -134,7 +151,11 @@ export const usersRouter = createTRPCRouter({
             email: input.email || input.id,
             name: input.name,
             language: input.language,
-            authorizations: input.authorizations,
+            authorizations: ['ADMIN'],
+            createdBy: ctx.user.id,
+            createdIp: ctx.clientIp,
+            updatedBy: ctx.user.id,
+            updatedIp: ctx.clientIp,
           },
         });
       } catch (e) {
@@ -171,6 +192,8 @@ export const usersRouter = createTRPCRouter({
         where: { id: input.id },
         data: {
           accountStatus: 'DISABLED',
+          updatedBy: ctx.user.id,
+          updatedIp: ctx.clientIp,
         },
       });
     }),
@@ -202,6 +225,8 @@ export const usersRouter = createTRPCRouter({
         where: { id: input.id },
         data: {
           accountStatus: 'ENABLED',
+          updatedBy: ctx.user.id,
+          updatedIp: ctx.clientIp,
         },
       });
     }),
@@ -234,6 +259,8 @@ export const usersRouter = createTRPCRouter({
             name: input.name,
             language: input.language,
             authorizations: input.authorizations,
+            updatedBy: ctx.user.id,
+            updatedIp: ctx.clientIp,
           },
         });
       } catch (e) {

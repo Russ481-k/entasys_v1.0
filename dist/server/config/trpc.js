@@ -37,16 +37,18 @@ export const createTRPCContext = async (opts) => {
       : Array.isArray(req.headers['x-forwarded-for'])
         ? req.headers['x-forwarded-for'][0]
         : req.headers['x-forwarded-for'];
+  // IPv6 접두사 제거 및 IP 주소 정제
+  const cleanIp =
+    (forwardedFor === null || forwardedFor === void 0
+      ? void 0
+      : forwardedFor.toString().replace(/^::ffff:/, '')) || '';
   const userAgent =
     req.headers instanceof Headers
       ? req.headers.get('user-agent')
       : req.headers['user-agent'];
   return {
     user: session,
-    clientIp:
-      (forwardedFor === null || forwardedFor === void 0
-        ? void 0
-        : forwardedFor.toString()) || '',
+    clientIp: cleanIp,
     userAgent:
       (userAgent === null || userAgent === void 0
         ? void 0
