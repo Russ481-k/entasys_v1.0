@@ -55,6 +55,9 @@ export const createTRPCContext = async (opts: FetchCreateContextFnOptions) => {
         ? req.headers['x-forwarded-for'][0]
         : req.headers['x-forwarded-for'];
 
+  // IPv6 접두사 제거 및 IP 주소 정제
+  const cleanIp = forwardedFor?.toString().replace(/^::ffff:/, '') || '';
+
   const userAgent =
     req.headers instanceof Headers
       ? req.headers.get('user-agent')
@@ -62,7 +65,7 @@ export const createTRPCContext = async (opts: FetchCreateContextFnOptions) => {
 
   return {
     user: session,
-    clientIp: forwardedFor?.toString() || '',
+    clientIp: cleanIp,
     userAgent: userAgent?.toString() || '',
     apiType,
     logger,

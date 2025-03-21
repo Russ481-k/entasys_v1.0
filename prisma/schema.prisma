@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = []
@@ -11,40 +8,24 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum AccountStatus {
-  // User has registered and verified their email
-  ENABLED
-  // User has been disabled and can't login anymore
-  DISABLED
-  // User did register, but has not verified their email yet.
-  NOT_VERIFIED
-}
-
-enum UserRole {
-  ADMIN
-  SYSTEM_ADMIN
-}
-
-enum SearchSessionStatus {
-  ACTIVE
-  CANCELLED
-  COMPLETED
-  ERROR
-}
-
 model User {
-  id             String        @id @default(cuid())
-  password       String        @default("$2b$08$Y5DIAN4lvVIpjGjaFPd.nup8F/dQxbyOuWEprW9/p9LWmInveT6Fe")
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id             String          @id @default(cuid())
+  password       String          @default("$2b$08$Y5DIAN4lvVIpjGjaFPd.nup8F/dQxbyOuWEprW9/p9LWmInveT6Fe")
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
   name           String?
-  email          String        @unique
-  accountStatus  AccountStatus @default(NOT_VERIFIED)
+  email          String          @unique
+  accountStatus  AccountStatus   @default(NOT_VERIFIED)
   image          String?
-  authorizations UserRole[]    @default([ADMIN])
-  language       String        @default("en")
+  authorizations UserRole[]
+  language       String          @default("en")
   lastLoginAt    DateTime?
   searchSessions SearchSession[]
+  createdBy      String?
+  createdIp      String?
+  updatedBy      String?
+  updatedIp      String?
+  verificationTokens VerificationToken[]
 }
 
 model VerificationToken {
@@ -53,8 +34,7 @@ model VerificationToken {
   expires       DateTime
   lastAttemptAt DateTime @updatedAt
   attempts      Int      @default(0)
-  // Useful to change the user email. This model will contains the next user
-  // email, waiting for the user to validate it.
+  user          User     @relation(fields: [userId], references: [id])
 }
 
 model Repository {
@@ -77,52 +57,51 @@ model Project {
 model Menu {
   id          Int          @id @default(autoincrement())
   name        String       @unique
-  columns     MenuColumn[]
   description String?
+  columns     MenuColumn[]
 }
 
 model Column {
   id          Int          @id @default(autoincrement())
   name        String       @unique
-  menus       MenuColumn[]
   description String?
+  menus       MenuColumn[]
 }
 
 model MenuColumn {
   id       Int    @id @default(autoincrement())
   menuId   Int
   columnId Int
-  menu     Menu   @relation(fields: [menuId], references: [id])
   column   Column @relation(fields: [columnId], references: [id])
+  menu     Menu   @relation(fields: [menuId], references: [id])
 
   @@unique([menuId, columnId])
 }
 
 model SystemLicense {
-  id           String    @id @default(cuid())
-  hardwareHash String    @unique
-  activatedAt  DateTime  @default(now())
-  expiresAt    DateTime
+  id            String    @id @default(cuid())
+  hardwareHash  String    @unique
+  activatedAt   DateTime  @default(now())
+  expiresAt     DateTime
   lastCheckedAt DateTime?
-  isActive     Boolean   @default(true)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 }
 
 model SearchSession {
-  id            String             @id @default(cuid())
-  userId        String
-  clientIp      String
-  userAgent     String
-  searchId      String             @unique
-  status        SearchSessionStatus
-  searchParams  Json
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
-  lastActivityAt DateTime          @default(now())
-  cancelReason  String?
-
-  user          User               @relation(fields: [userId], references: [id])
+  id             String              @id @default(cuid())
+  userId         String
+  clientIp       String
+  userAgent      String
+  searchId       String              @unique
+  status         SearchSessionStatus
+  searchParams   Json
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  lastActivityAt DateTime            @default(now())
+  cancelReason   String?
+  user           User                @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@index([clientIp])
@@ -137,4 +116,22 @@ model Domain {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   isActive    Boolean  @default(true)
+}
+
+enum AccountStatus {
+  ENABLED
+  DISABLED
+  NOT_VERIFIED
+}
+
+enum UserRole {
+  ADMIN
+  SYSTEM_ADMIN
+}
+
+enum SearchSessionStatus {
+  ACTIVE
+  CANCELLED
+  COMPLETED
+  ERROR
 }

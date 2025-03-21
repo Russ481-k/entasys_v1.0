@@ -54,6 +54,8 @@ import buildInfo from '../../../scripts/.build-info.json';
 
 const AdminNavBarMainMenu = ({ ...rest }: StackProps) => {
   const { t } = useTranslation(['admin']);
+  const account = trpc.account.get.useQuery();
+
   return (
     <Stack direction="row" spacing="1" {...rest}>
       <AdminNavBarMainMenuItem href="/dashboard">
@@ -62,9 +64,11 @@ const AdminNavBarMainMenu = ({ ...rest }: StackProps) => {
       <AdminNavBarMainMenuItem href="/monitoring">
         {t('admin:layout.mainMenu.monitoring')}
       </AdminNavBarMainMenuItem>
-      <AdminNavBarMainMenuItem href="/management">
-        {t('admin:layout.mainMenu.management')}
-      </AdminNavBarMainMenuItem>
+      {account.data?.authorizations.includes('SYSTEM_ADMIN') && (
+        <AdminNavBarMainMenuItem href="/management">
+          {t('admin:layout.mainMenu.management')}
+        </AdminNavBarMainMenuItem>
+      )}
     </Stack>
   );
 };

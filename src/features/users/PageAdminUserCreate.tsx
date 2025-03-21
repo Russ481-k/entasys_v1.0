@@ -60,7 +60,7 @@ export default function PageAdminUserCreate() {
   });
 
   return (
-    <AdminLayoutPage containerMaxWidth="container.md">
+    <AdminLayoutPage w="100%">
       <Form
         {...form}
         onSubmit={(values) => {

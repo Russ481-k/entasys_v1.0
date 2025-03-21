@@ -5,7 +5,7 @@ import { useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
 import { FormField } from '@/components/Form';
-import { FormFieldUser, USER_AUTHORIZATIONS } from '@/features/users/schemas';
+import { FormFieldUser } from '@/features/users/schemas';
 import { AVAILABLE_LANGUAGES } from '@/lib/i18n/constants';
 
 export const UserForm = () => {
@@ -40,17 +40,6 @@ export const UserForm = () => {
         options={AVAILABLE_LANGUAGES.map(({ key }) => ({
           label: t(`common:languages.${key}`),
           value: key,
-        }))}
-      />
-      <FormField
-        control={form.control}
-        type="multi-select"
-        name="authorizations"
-        label={t('users:data.authorizations.label')}
-        isDisabled
-        options={USER_AUTHORIZATIONS.map((authorization) => ({
-          value: authorization,
-          label: t(`users:data.authorizations.options.${authorization}`),
         }))}
       />
     </Stack>

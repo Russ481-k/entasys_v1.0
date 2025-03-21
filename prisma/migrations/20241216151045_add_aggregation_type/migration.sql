@@ -2,7 +2,7 @@
 CREATE TYPE "AccountStatus" AS ENUM ('ENABLED', 'DISABLED', 'NOT_VERIFIED');
 
 -- CreateEnum
-CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'ADMIN');
+CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'SYSTEM_ADMIN');
 
 -- CreateTable
 CREATE TABLE "User" (

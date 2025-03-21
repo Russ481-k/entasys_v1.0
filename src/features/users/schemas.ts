@@ -36,17 +36,18 @@ export const zUser = () =>
         invalid_type_error: t('users:data.email.invalid'),
       })
       .nullish(),
-    authorizations: zu.array
-      .nonEmpty(
-        z.array(zUserAuthorization(), {
-          required_error: t('users:data.authorizations.required'),
-        })
-      )
-      .default(['ADMIN', 'SYSTEM_ADMIN']),
     accountStatus: zUserAccountStatus(),
+    image: z.string().nullable(),
+    authorizations: z.array(zUserAuthorization()),
     language: zu.string
       .nonEmpty(z.string().min(2))
       .default(DEFAULT_LANGUAGE_KEY),
+    lastLoginAt: z.date().nullable(),
+    // Audit fields
+    createdBy: z.string().nullable(),
+    createdIp: z.string().nullable(),
+    updatedBy: z.string().nullable(),
+    updatedIp: z.string().nullable(),
   });
 
 export type FormFieldUser = z.infer<ReturnType<typeof zFormFieldsUser>>;
@@ -60,3 +61,11 @@ export const zFormFieldsUser = () =>
       authorizations: true,
     })
     .required();
+
+export const zUserCreate = () =>
+  z.object({
+    name: z.string().nullable(),
+    email: z.string(),
+    language: z.string(),
+    authorizations: z.array(zUserAuthorization()),
+  });
