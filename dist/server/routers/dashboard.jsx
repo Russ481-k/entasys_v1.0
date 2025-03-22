@@ -350,7 +350,7 @@ export const dashboardRouter = createTRPCRouter({
       };
     }),
   getChartMetrics: protectedProcedure().query(async () => {
-    var _a, _b, _c;
+    var _a, _b, _c, _d, _e, _f, _g;
     const now = dayjs().tz('Asia/Seoul');
     // 활성화된 도메인 목록 조회
     const activeDomains = await prisma.domain.findMany({
@@ -497,6 +497,53 @@ export const dashboardRouter = createTRPCRouter({
         }
       });
       const domainMonthlyResults = await Promise.all(domainMonthlyPromises);
+      const sourceCountrySessions = await makeOpenSearchRequest(
+        '/_search',
+        'POST',
+        {
+          size: 0,
+          query: {
+            match_all: {}, // 모든 문서 매칭
+          },
+          aggs: {
+            source_country: {
+              terms: {
+                field: 'sourceCountry.keyword',
+                order: { _count: 'desc' },
+                size: 10000,
+              },
+            },
+          },
+        }
+      );
+      const destinationCountrySessions = await makeOpenSearchRequest(
+        '/_search',
+        'POST',
+        {
+          size: 0,
+          query: {
+            match_all: {}, // 모든 문서 매칭
+          },
+          aggs: {
+            destination_country: {
+              terms: {
+                field: 'destinationCountry.keyword',
+                order: { _count: 'desc' },
+                size: 10000,
+              },
+            },
+          },
+        }
+      );
+      // 디버깅을 위한 로그 추가
+      console.log(
+        'Source Country Query:',
+        JSON.stringify(sourceCountrySessions, null, 2)
+      );
+      console.log(
+        'Destination Country Query:',
+        JSON.stringify(destinationCountrySessions, null, 2)
+      );
       return {
         hourly_totals:
           ((_a = hourlyResult.aggregations.logs_per_hour) === null ||
@@ -523,6 +570,27 @@ export const dashboardRouter = createTRPCRouter({
                 total: bucket.doc_count,
               }))) || [],
         domain_monthly_totals: domainMonthlyResults,
+        source_country_sessions:
+          ((_e =
+            (_d = sourceCountrySessions.aggregations) === null || _d === void 0
+              ? void 0
+              : _d.source_country) === null || _e === void 0
+            ? void 0
+            : _e.buckets.map((bucket) => ({
+                country: bucket.key,
+                count: bucket.doc_count,
+              }))) || [],
+        destination_country_sessions:
+          ((_g =
+            (_f = destinationCountrySessions.aggregations) === null ||
+            _f === void 0
+              ? void 0
+              : _f.destination_country) === null || _g === void 0
+            ? void 0
+            : _g.buckets.map((bucket) => ({
+                country: bucket.key,
+                count: bucket.doc_count,
+              }))) || [],
       };
     } catch (error) {
       console.error('Error in getChartMetrics:', error);

@@ -6,6 +6,7 @@ import { dashboardRouter } from './dashboard';
 import { domainsRouter } from './domains';
 import { downloadRouter } from './download';
 import { integrityRouter } from './integrity';
+import { projectsRouter } from './projects';
 import { searchSessionRouter } from './search-sessions';
 import { usersRouter } from './users';
 
@@ -18,6 +19,7 @@ export const appRouter = createTRPCRouter({
   domains: domainsRouter,
   users: usersRouter,
   integrity: integrityRouter,
+  projects: projectsRouter,
 });
 
 export type AppRouter = typeof appRouter;

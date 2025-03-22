@@ -42,7 +42,7 @@ export const IntegrityCheck: React.FC = () => {
   const [selectedDomain, setSelectedDomain] = useState<string>('');
   const [isChecking, setIsChecking] = useState(false);
   const [result, setResult] = useState<IntegrityCheckResult | null>(null);
-  const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d'>('7d');
+  const [timeRange] = useState<'24h' | '7d' | '30d'>('7d');
 
   const { data: domains } = trpc.domains.getDomains.useQuery({});
 

@@ -1,8 +1,29 @@
 {
   "nav": {
-    "title": "Usimamizi",
-    "users": "Watumiaji",
-    "menus": "Menyu",
-    "database": "Hifadhidata"
+    "title": "Hantering",
+    "users": "Användarhantering",
+    "domains": "Domänhantering",
+    "menus": "Menyhantering",
+    "database": "Databashantering",
+    "integrity": "Integritetskontroll"
+  },
+  "integrity": {
+    "title": "Integritetskontroll",
+    "description": "Verifiera integriteten i loggdata",
+    "settings": "Verifieringsinställningar",
+    "startCheck": "Starta kontroll",
+    "checking": "Kontrollerar...",
+    "selectDomain": "Välj domän",
+    "selectDomainPlaceholder": "Välj en domän",
+    "domainRequired": "Domänval krävs",
+    "domainRequiredDescription": "Välj en domän att verifiera",
+    "results": "Verifieringsresultat",
+    "totalLogs": "Totalt antal loggar",
+    "matchedLogs": "Matchande loggar",
+    "unmatchedLogs": "Icke-matchande loggar",
+    "details": "Detaljerade resultat",
+    "checkComplete": "Integritetskontroll slutförd",
+    "checkCompleteDescription": "Integriteten i loggdata har verifierats",
+    "error": "Ett fel uppstod"
   }
 }

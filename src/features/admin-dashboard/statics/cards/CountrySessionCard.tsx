@@ -1,13 +1,6 @@
 import React from 'react';
 
-import {
-  Box,
-  Flex,
-  Text,
-  VStack,
-  useColorMode,
-  useColorModeValue,
-} from '@chakra-ui/react';
+import { Box, Flex, Text, VStack, useColorMode } from '@chakra-ui/react';
 
 interface CountrySession {
   country: string;
@@ -25,7 +18,6 @@ export const CountrySessionCard: React.FC<CountrySessionCardProps> = ({
   title,
   subtitle,
   data,
-  type,
 }) => {
   const { colorMode } = useColorMode();
 

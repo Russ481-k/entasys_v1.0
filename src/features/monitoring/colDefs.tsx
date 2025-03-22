@@ -7,8 +7,6 @@ import {
   ValueFormatterParams,
 } from 'ag-grid-community';
 
-import { MenuType } from '@/types/project';
-
 import { zLogs } from './schemas';
 import { columnNames } from './versions/11.0/colNameList_11.0';
 

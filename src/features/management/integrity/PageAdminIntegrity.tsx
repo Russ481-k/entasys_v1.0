@@ -28,31 +28,16 @@ import {
   Progress,
   Select,
   Stack,
-  Table,
-  Tbody,
-  Td,
   Text,
-  Th,
-  Thead,
   Tooltip,
-  Tr,
   VStack,
   useColorMode,
   useDisclosure,
   useToast,
 } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
-import { FiCheck, FiInfo, FiX } from 'react-icons/fi';
 
-import {
-  DataList,
-  DataListCell,
-  DataListEmptyState,
-  DataListErrorState,
-  DataListLoadingState,
-  DataListRow,
-  DataListText,
-} from '@/components/DataList';
+import { DataList, DataListCell, DataListRow } from '@/components/DataList';
 import {
   AdminLayoutPage,
   AdminLayoutPageContent,
@@ -97,17 +82,15 @@ export const PageAdminIntegrity: React.FC = () => {
       result?: IntegrityCheckResult;
     };
   }>({});
-  const [domainCounts, setDomainCounts] = useState<Record<string, number>>({});
+  const [, setDomainCounts] = useState<Record<string, number>>({});
   const [isCompleted, setIsCompleted] = useState(false);
 
   const { data: domains } = trpc.domains.getDomains.useQuery({});
-  const { data: domainLogCounts, refetch: refetchDomainCounts } =
-    trpc.integrity.getDomainCounts.useQuery({
-      timeRange: '7d',
-    });
+  const { data: domainLogCounts } = trpc.integrity.getDomainCounts.useQuery({
+    timeRange: '7d',
+  });
 
   useEffect(() => {
-    console.log('Domain log counts received:', domainLogCounts);
     if (domainLogCounts) {
       const counts = domainLogCounts.reduce(
         (acc, { domain, count }) => {
@@ -227,12 +210,6 @@ export const PageAdminIntegrity: React.FC = () => {
     });
   };
 
-  const handleClearSelection = () => {
-    setSelectedDomains([]);
-    setResult(null);
-    setIsCompleted(false);
-  };
-
   const handleExport = () => {
     if (!result) return;
 
@@ -266,28 +243,6 @@ export const PageAdminIntegrity: React.FC = () => {
     link.href = URL.createObjectURL(blob);
     link.download = `integrity-check-${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
-  };
-
-  const getStatusColor = (status: 'checking' | 'completed' | 'error') => {
-    switch (status) {
-      case 'completed':
-        return 'green';
-      case 'error':
-        return 'red';
-      default:
-        return 'blue';
-    }
-  };
-
-  const getStatusIcon = (status: 'checking' | 'completed' | 'error') => {
-    switch (status) {
-      case 'completed':
-        return FiCheck;
-      case 'error':
-        return FiX;
-      default:
-        return FiInfo;
-    }
   };
 
   return (
@@ -376,7 +331,6 @@ export const PageAdminIntegrity: React.FC = () => {
                           (domain) => !selectedDomains.includes(domain.name)
                         )
                         .map((domain: Domain) => {
-                          const logCount = domainCounts[domain.name] || 0;
                           return (
                             <option key={domain.id} value={domain.name}>
                               {domain.name}
@@ -435,50 +389,51 @@ export const PageAdminIntegrity: React.FC = () => {
                                 <Box mt={2}>
                                   <Flex justify="space-between" mb={1}>
                                     <Text fontSize="sm" color="text-dimmed">
-                                      {checkProgress[domain].status ===
+                                      {checkProgress[domain]?.status ===
                                         'pending' &&
                                         t('management:integrity.settings')}
-                                      {checkProgress[domain].status ===
+                                      {checkProgress[domain]?.status ===
                                         'checking' &&
                                         t('management:integrity.checking')}
-                                      {checkProgress[domain].status ===
+                                      {checkProgress[domain]?.status ===
                                         'completed' &&
                                         t('management:integrity.checkComplete')}
-                                      {checkProgress[domain].status ===
+                                      {checkProgress[domain]?.status ===
                                         'error' &&
                                         t('management:integrity.error')}
                                     </Text>
-                                    {checkProgress[domain].status ===
+                                    {checkProgress[domain]?.status ===
                                       'completed' &&
-                                      checkProgress[domain].result
+                                      checkProgress[domain]?.result
                                         ?.details[0] && (
                                         <Badge
                                           colorScheme={
-                                            checkProgress[domain].result
-                                              .details[0].percentage >= 95
+                                            (checkProgress[domain]?.result
+                                              ?.details?.[0]?.percentage ??
+                                              0) >= 95
                                               ? 'green'
-                                              : checkProgress[domain].result
-                                                    .details[0].percentage >= 90
+                                              : (checkProgress[domain]?.result
+                                                    ?.details?.[0]
+                                                    ?.percentage ?? 0) >= 90
                                                 ? 'yellow'
                                                 : 'red'
                                           }
                                         >
-                                          {checkProgress[
-                                            domain
-                                          ].result.details[0].percentage.toFixed(
-                                            2
-                                          )}
+                                          {(
+                                            checkProgress[domain]?.result
+                                              ?.details?.[0]?.percentage ?? 0
+                                          ).toFixed(2)}
                                           %
                                         </Badge>
                                       )}
                                   </Flex>
                                   <Progress
-                                    value={checkProgress[domain].progress}
+                                    value={checkProgress[domain]?.progress ?? 0}
                                     colorScheme={
-                                      checkProgress[domain].status ===
+                                      checkProgress[domain]?.status ===
                                       'completed'
                                         ? 'green'
-                                        : checkProgress[domain].status ===
+                                        : checkProgress[domain]?.status ===
                                             'error'
                                           ? 'red'
                                           : 'blue'
@@ -487,7 +442,7 @@ export const PageAdminIntegrity: React.FC = () => {
                                     borderRadius="full"
                                     transition="all 1s ease-in-out"
                                     isAnimated={
-                                      checkProgress[domain].status ===
+                                      checkProgress[domain]?.status ===
                                       'checking'
                                     }
                                   />

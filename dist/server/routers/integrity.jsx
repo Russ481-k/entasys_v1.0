@@ -9,27 +9,6 @@ import { prisma } from './dashboard';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
-
-interface OpenSearchCountResponse {
-  count: number;
-}
-
-interface OpenSearchIndex {
-  index: string;
-  health: string;
-  status: string;
-  uuid: string;
-  pri: string;
-  rep: string;
-  'docs.count': string;
-  'docs.deleted': string;
-  'store.size': string;
-}
-
-interface Domain {
-  name: string;
-}
-
 export const integrityRouter = createTRPCRouter({
   getDomainCounts: protectedProcedure({
     authorizations: ['SYSTEM_ADMIN'],
@@ -43,7 +22,6 @@ export const integrityRouter = createTRPCRouter({
       const { timeRange } = input;
       const now = dayjs().tz('Asia/Seoul');
       const startDate = dayjs().tz('Asia/Seoul');
-
       switch (timeRange) {
         case '24h':
           startDate.subtract(24, 'hours');
@@ -55,75 +33,63 @@ export const integrityRouter = createTRPCRouter({
           startDate.subtract(30, 'days');
           break;
       }
-
       // 활성화된 도메인 목록 조회
       const activeDomains = await prisma.domain.findMany({
         where: { isActive: true },
         select: { name: true },
       });
-
       // 도메인별 로그 개수를 가져옵니다
       return await Promise.all(
-        activeDomains.map(async (domain: Domain) => {
+        activeDomains.map(async (domain) => {
           try {
             const domainPattern = domain.name
               .toLowerCase()
               .replace(/\./g, '-')
               .replace(/[^a-z0-9\-]/g, '_');
-
             // 먼저 인덱스 목록을 가져옵니다
-            const indicesResponse = await makeOpenSearchRequest<
-              OpenSearchIndex[]
-            >('/_cat/indices?format=json', 'GET', undefined);
-
+            const indicesResponse = await makeOpenSearchRequest(
+              '/_cat/indices?format=json',
+              'GET',
+              undefined
+            );
             // 해당 도메인의 인덱스만 필터링합니다
             const domainIndices = indicesResponse
-              .filter((index: OpenSearchIndex) =>
-                index.index.includes(domainPattern)
-              )
-              .map((index: OpenSearchIndex) => index.index);
-
+              .filter((index) => index.index.includes(domainPattern))
+              .map((index) => index.index);
             if (domainIndices.length === 0) {
               return {
                 domain: domain.name,
                 count: 0,
               };
             }
-
             // 각 인덱스에서 로그 개수를 가져옵니다
             const counts = await Promise.all(
-              domainIndices.map(async (index: string) => {
-                const result =
-                  await makeOpenSearchRequest<OpenSearchCountResponse>(
-                    `/${index}/_count`,
-                    'POST',
-                    {
-                      query: {
-                        bool: {
-                          must: [
-                            {
-                              range: {
-                                '@timestamp': {
-                                  gte: startDate.toISOString(),
-                                  lte: now.toISOString(),
-                                  time_zone: '+09:00',
-                                },
+              domainIndices.map(async (index) => {
+                const result = await makeOpenSearchRequest(
+                  `/${index}/_count`,
+                  'POST',
+                  {
+                    query: {
+                      bool: {
+                        must: [
+                          {
+                            range: {
+                              '@timestamp': {
+                                gte: startDate.toISOString(),
+                                lte: now.toISOString(),
+                                time_zone: '+09:00',
                               },
                             },
-                          ],
-                        },
+                          },
+                        ],
                       },
-                    }
-                  );
+                    },
+                  }
+                );
                 return result.count || 0;
               })
             );
-
-            const totalCount = counts.reduce(
-              (sum: number, count: number) => sum + count,
-              0
-            );
-
+            const totalCount = counts.reduce((sum, count) => sum + count, 0);
             return {
               domain: domain.name,
               count: totalCount,
@@ -141,7 +107,6 @@ export const integrityRouter = createTRPCRouter({
         })
       );
     }),
-
   checkIntegrity: protectedProcedure({
     authorizations: ['SYSTEM_ADMIN'],
   })
@@ -153,30 +118,24 @@ export const integrityRouter = createTRPCRouter({
     )
     .mutation(async ({ input }) => {
       const { domain } = input;
-
       try {
         const domainPattern = domain
           .toLowerCase()
           .replace(/\./g, '-')
           .replace(/[^a-z0-9\-]/g, '_');
-
         // 인덱스 목록을 가져옵니다
-        const indicesResponse = await makeOpenSearchRequest<OpenSearchIndex[]>(
+        const indicesResponse = await makeOpenSearchRequest(
           '/_cat/indices?format=json',
           'GET',
           undefined
         );
-
         // 해당 도메인의 인덱스만 필터링합니다
         const domainIndices = indicesResponse
-          .filter((index: OpenSearchIndex) =>
-            index.index.includes(domainPattern)
-          )
-          .map((index: OpenSearchIndex) => ({
+          .filter((index) => index.index.includes(domainPattern))
+          .map((index) => ({
             name: index.index,
             count: parseInt(index['docs.count'], 10),
           }));
-
         if (domainIndices.length === 0) {
           return {
             totalLogs: 0,
@@ -195,16 +154,13 @@ export const integrityRouter = createTRPCRouter({
             domainLogCounts: [],
           };
         }
-
         const totalLogs = domainIndices.reduce(
           (sum, index) => sum + index.count,
           0
         );
-
         const matchedLogs = totalLogs; // 100% 일치
         const unmatchedLogs = 0;
         const percentage = 100;
-
         return {
           totalLogs,
           matchedLogs,
