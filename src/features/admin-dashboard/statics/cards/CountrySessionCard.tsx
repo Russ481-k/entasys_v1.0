@@ -1,21 +1,31 @@
 import React from 'react';
 
-import { Box, Flex, Text, VStack, useColorMode } from '@chakra-ui/react';
+import {
+  Box,
+  Flex,
+  Text,
+  VStack,
+  useColorMode,
+  useColorModeValue,
+} from '@chakra-ui/react';
 
-interface CpuUsageCardProps {
-  title: string;
-  subtitle: string;
-  data: {
-    label: string;
-    value: number;
-    unit: string;
-  }[];
+interface CountrySession {
+  country: string;
+  count: number;
 }
 
-export const CpuUsageCard: React.FC<CpuUsageCardProps> = ({
+interface CountrySessionCardProps {
+  title: string;
+  subtitle: string;
+  data: CountrySession[];
+  type: 'source' | 'destination';
+}
+
+export const CountrySessionCard: React.FC<CountrySessionCardProps> = ({
   title,
   subtitle,
   data,
+  type,
 }) => {
   const { colorMode } = useColorMode();
 
@@ -36,7 +46,6 @@ export const CpuUsageCard: React.FC<CpuUsageCardProps> = ({
         alignItems="center"
         textAlign="center"
         justifyContent="center"
-        mb={4}
       >
         <Text fontSize="lg" fontWeight="bold">
           {title}
@@ -49,40 +58,33 @@ export const CpuUsageCard: React.FC<CpuUsageCardProps> = ({
         </Text>
       </Box>
 
-      <Box
-        flex="1"
-        overflowY="auto"
-        maxH="140px"
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
-      >
-        <VStack gap={0} align="stretch" w="100%">
-          {data.map((item) => (
+      <Box flex="1" overflowY="auto" maxH="140px">
+        <VStack gap={0} align="stretch">
+          {data.map((country, index) => (
             <Flex
-              key={item.label}
+              key={country.country}
               justify="space-between"
               align="center"
               px={6}
               py={2}
             >
               <Text
-                fontSize="lg"
+                fontSize="sm"
                 noOfLines={1}
                 maxW="200px"
                 overflow="hidden"
                 textOverflow="ellipsis"
                 whiteSpace="nowrap"
               >
-                {item.label}
+                {index + 1}. {country.country}
               </Text>
               <Text
-                fontSize="lg"
+                fontSize="sm"
                 fontWeight="bold"
                 minW="100px"
                 textAlign="right"
               >
-                {item.value.toLocaleString()} {item.unit}
+                {country.count.toLocaleString()}
               </Text>
             </Flex>
           ))}

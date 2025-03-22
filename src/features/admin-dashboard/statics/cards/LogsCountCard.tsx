@@ -2,17 +2,16 @@ import React from 'react';
 
 import { Box, Flex, Text, VStack, useColorMode } from '@chakra-ui/react';
 
-interface CpuUsageCardProps {
+interface LogsCountCardProps {
   title: string;
   subtitle: string;
   data: {
     label: string;
-    value: number;
-    unit: string;
+    count: number;
   }[];
 }
 
-export const CpuUsageCard: React.FC<CpuUsageCardProps> = ({
+export const LogsCountCard: React.FC<LogsCountCardProps> = ({
   title,
   subtitle,
   data,
@@ -82,7 +81,12 @@ export const CpuUsageCard: React.FC<CpuUsageCardProps> = ({
                 minW="100px"
                 textAlign="right"
               >
-                {item.value.toLocaleString()} {item.unit}
+                {item.count >= 1000000
+                  ? Math.floor(item.count / 1000000).toLocaleString() + ' M'
+                  : item.count >= 100000
+                    ? Math.floor(item.count / 1000).toLocaleString() + ' K'
+                    : item.count.toLocaleString()}{' '}
+                건
               </Text>
             </Flex>
           ))}

@@ -287,6 +287,18 @@ interface OpenSearchAggregationResponse {
         doc_count: number;
       }>;
     };
+    source_country?: {
+      buckets: Array<{
+        key: string;
+        doc_count: number;
+      }>;
+    };
+    destination_country?: {
+      buckets: Array<{
+        key: string;
+        doc_count: number;
+      }>;
+    };
   };
 }
 
@@ -609,6 +621,59 @@ export const dashboardRouter = createTRPCRouter({
       });
 
       const domainMonthlyResults = await Promise.all(domainMonthlyPromises);
+
+      const sourceCountrySessions =
+        await makeOpenSearchRequest<OpenSearchAggregationResponse>(
+          '/_search',
+          'POST',
+          {
+            size: 0,
+            query: {
+              match_all: {}, // 모든 문서 매칭
+            },
+            aggs: {
+              source_country: {
+                terms: {
+                  field: 'sourceCountry.keyword',
+                  order: { _count: 'desc' },
+                  size: 10000,
+                },
+              },
+            },
+          }
+        );
+
+      const destinationCountrySessions =
+        await makeOpenSearchRequest<OpenSearchAggregationResponse>(
+          '/_search',
+          'POST',
+          {
+            size: 0,
+            query: {
+              match_all: {}, // 모든 문서 매칭
+            },
+            aggs: {
+              destination_country: {
+                terms: {
+                  field: 'destinationCountry.keyword',
+                  order: { _count: 'desc' },
+                  size: 10000,
+                },
+              },
+            },
+          }
+        );
+
+      // 디버깅을 위한 로그 추가
+      console.log(
+        'Source Country Query:',
+        JSON.stringify(sourceCountrySessions, null, 2)
+      );
+      console.log(
+        'Destination Country Query:',
+        JSON.stringify(destinationCountrySessions, null, 2)
+      );
+
       return {
         hourly_totals:
           hourlyResult.aggregations.logs_per_hour?.buckets.map(
@@ -632,6 +697,20 @@ export const dashboardRouter = createTRPCRouter({
             })
           ) || [],
         domain_monthly_totals: domainMonthlyResults,
+        source_country_sessions:
+          sourceCountrySessions.aggregations?.source_country?.buckets.map(
+            (bucket) => ({
+              country: bucket.key,
+              count: bucket.doc_count,
+            })
+          ) || [],
+        destination_country_sessions:
+          destinationCountrySessions.aggregations?.destination_country?.buckets.map(
+            (bucket) => ({
+              country: bucket.key,
+              count: bucket.doc_count,
+            })
+          ) || [],
       };
     } catch (error) {
       console.error('Error in getChartMetrics:', error);

@@ -468,7 +468,6 @@ export default function PageProjects() {
           <GridSection
             data={data?.pages[0]?.logs ?? []}
             isLoading={isDataLoading}
-            menu={menu}
             onCellClicked={onCellClicked}
             colorMode={colorMode}
             timeFormatter={timeFormatter}

@@ -87,7 +87,12 @@ export const DiskUsageCard = ({
         justifyContent="center"
         height="220px"
       >
-        <Box>
+        <Box
+          m="auto"
+          alignItems="center"
+          textAlign="center"
+          justifyContent="center"
+        >
           <Text fontSize="lg" fontWeight="bold">
             Disk 사용량
           </Text>

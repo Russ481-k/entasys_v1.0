@@ -10,8 +10,6 @@ import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 import { AgGridReact } from 'ag-grid-react';
 
-import { MenuType } from '@/types/project';
-
 import { colDefs } from '../colDefs';
 import { zLogs } from '../schemas';
 import { dummy } from '../versions/11.0/dummy_11.0';
@@ -19,7 +17,6 @@ import { dummy } from '../versions/11.0/dummy_11.0';
 interface GridSectionProps {
   data: (zLogs | null | undefined)[];
   isLoading: boolean;
-  menu: MenuType;
   onCellClicked: (event: CellClickedEvent<zLogs>) => void;
   colorMode: 'light' | 'dark';
   timeFormatter: (params: ValueFormatterParams) => string;
@@ -29,7 +26,6 @@ export const GridSection = memo(
   ({
     data,
     isLoading,
-    menu,
     onCellClicked,
     colorMode,
     timeFormatter,
@@ -58,7 +54,7 @@ export const GridSection = memo(
         <AgGridReact
           ref={gridRef}
           rowData={!isLoading ? data : dummy}
-          columnDefs={colDefs(menu, !isLoading, onCellClicked, timeFormatter)}
+          columnDefs={colDefs(!isLoading, onCellClicked, timeFormatter)}
           rowHeight={26}
           headerHeight={26}
           onGridReady={onGridReady}

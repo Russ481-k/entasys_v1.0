@@ -119,7 +119,6 @@ const createColumn = (
 
 // 최종 컬럼 정의 함수
 export const colDefs = (
-  menu: MenuType,
   isLoading: boolean,
   onCellClickChanged: (event: CellClickedEvent<zLogs>) => void,
   timeFormatter: (e: ValueFormatterParams<zLogs>) => string
