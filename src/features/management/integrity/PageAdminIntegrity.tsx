@@ -12,7 +12,7 @@ import {
   Button,
   Card,
   CardBody,
-  CardHeader,
+  Collapse,
   Flex,
   Grid,
   HStack,
@@ -36,11 +36,13 @@ import {
   Thead,
   Tooltip,
   Tr,
+  VStack,
   useColorMode,
   useDisclosure,
   useToast,
 } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
+import { FiCheck, FiInfo, FiX } from 'react-icons/fi';
 
 import {
   DataList,
@@ -68,16 +70,11 @@ interface IntegrityCheckResult {
     matched: number;
     unmatched: number;
     percentage: number;
-    sampleLogs: {
-      id: string;
-      timestamp: string;
-      sourceIp: string;
-      destinationIp: string;
-      sourceCountry: string;
-      destinationCountry: string;
-      status: string;
-    }[];
   }[];
+  domainLogCounts: Array<{
+    key: string;
+    doc_count: number;
+  }>;
 }
 
 interface Domain {
@@ -93,7 +90,6 @@ export const PageAdminIntegrity: React.FC = () => {
   const [selectedDomains, setSelectedDomains] = useState<string[]>([]);
   const [isChecking, setIsChecking] = useState(false);
   const [result, setResult] = useState<IntegrityCheckResult | null>(null);
-  const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d'>('7d');
   const [checkProgress, setCheckProgress] = useState<{
     [key: string]: {
       status: 'pending' | 'checking' | 'completed' | 'error';
@@ -102,11 +98,12 @@ export const PageAdminIntegrity: React.FC = () => {
     };
   }>({});
   const [domainCounts, setDomainCounts] = useState<Record<string, number>>({});
+  const [isCompleted, setIsCompleted] = useState(false);
 
   const { data: domains } = trpc.domains.getDomains.useQuery({});
   const { data: domainLogCounts, refetch: refetchDomainCounts } =
     trpc.integrity.getDomainCounts.useQuery({
-      timeRange: timeRange as '24h' | '7d' | '30d',
+      timeRange: '7d',
     });
 
   useEffect(() => {
@@ -124,10 +121,25 @@ export const PageAdminIntegrity: React.FC = () => {
     }
   }, [domainLogCounts]);
 
-  useEffect(() => {
-    console.log('Refetching domain counts for timeRange:', timeRange);
-    refetchDomainCounts();
-  }, [timeRange, refetchDomainCounts]);
+  const simulateProgress = (domain: string) => {
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += Math.random() * 15;
+      if (progress >= 90) {
+        clearInterval(interval);
+        checkIntegrity.mutate({ domain, timeRange: '7d' });
+        return;
+      }
+      setCheckProgress((prev) => ({
+        ...prev,
+        [domain]: {
+          status: 'checking',
+          progress,
+          result: prev[domain]?.result,
+        },
+      }));
+    }, 1000);
+  };
 
   const checkIntegrity = trpc.integrity.checkIntegrity.useMutation({
     onSuccess: (data: IntegrityCheckResult, variables) => {
@@ -139,6 +151,28 @@ export const PageAdminIntegrity: React.FC = () => {
           result: data,
         },
       }));
+
+      setTimeout(() => {
+        setResult((prev) => {
+          if (!prev) return data;
+          return {
+            totalLogs: prev.totalLogs + data.totalLogs,
+            matchedLogs: prev.matchedLogs + data.matchedLogs,
+            unmatchedLogs: prev.unmatchedLogs + data.unmatchedLogs,
+            details: [...prev.details, ...data.details],
+            domainLogCounts: [...prev.domainLogCounts, ...data.domainLogCounts],
+          };
+        });
+        setIsCompleted(true);
+        setIsChecking(false);
+        toast({
+          title: t('management:integrity.checkComplete'),
+          description: t('management:integrity.checkCompleteDescription'),
+          status: 'success',
+          duration: 5000,
+          isClosable: true,
+        });
+      }, 1000);
     },
     onError: (error, variables) => {
       setCheckProgress((prev) => ({
@@ -148,6 +182,7 @@ export const PageAdminIntegrity: React.FC = () => {
           progress: 0,
         },
       }));
+      setIsChecking(false);
       toast({
         title: t('management:integrity.error'),
         description: error.message,
@@ -171,6 +206,8 @@ export const PageAdminIntegrity: React.FC = () => {
     }
 
     setIsChecking(true);
+    setIsCompleted(false);
+    setResult(null);
     setCheckProgress(
       selectedDomains.reduce(
         (acc, domain) => ({
@@ -181,33 +218,19 @@ export const PageAdminIntegrity: React.FC = () => {
       )
     );
 
-    // 각 도메인에 대해 순차적으로 검증 실행
-    Promise.all(
-      selectedDomains.map((domain) => {
-        setCheckProgress((prev) => ({
-          ...prev,
-          [domain]: { status: 'checking', progress: 0 },
-        }));
-        return checkIntegrity.mutateAsync({ domain, timeRange });
-      })
-    ).then((results) => {
-      // 결과 병합
-      const mergedResult: IntegrityCheckResult = {
-        totalLogs: results.reduce((sum, r) => sum + r.totalLogs, 0),
-        matchedLogs: results.reduce((sum, r) => sum + r.matchedLogs, 0),
-        unmatchedLogs: results.reduce((sum, r) => sum + r.unmatchedLogs, 0),
-        details: results.flatMap((r) => r.details),
-      };
-      setResult(mergedResult);
-      setIsChecking(false);
-      toast({
-        title: t('management:integrity.checkComplete'),
-        description: t('management:integrity.checkCompleteDescription'),
-        status: 'success',
-        duration: 5000,
-        isClosable: true,
-      });
+    selectedDomains.forEach((domain) => {
+      setCheckProgress((prev) => ({
+        ...prev,
+        [domain]: { status: 'checking', progress: 0 },
+      }));
+      simulateProgress(domain);
     });
+  };
+
+  const handleClearSelection = () => {
+    setSelectedDomains([]);
+    setResult(null);
+    setIsCompleted(false);
   };
 
   const handleExport = () => {
@@ -245,6 +268,28 @@ export const PageAdminIntegrity: React.FC = () => {
     link.click();
   };
 
+  const getStatusColor = (status: 'checking' | 'completed' | 'error') => {
+    switch (status) {
+      case 'completed':
+        return 'green';
+      case 'error':
+        return 'red';
+      default:
+        return 'blue';
+    }
+  };
+
+  const getStatusIcon = (status: 'checking' | 'completed' | 'error') => {
+    switch (status) {
+      case 'completed':
+        return FiCheck;
+      case 'error':
+        return FiX;
+      default:
+        return FiInfo;
+    }
+  };
+
   return (
     <AdminLayoutPage containerMaxWidth="container.xl" nav={<AdminNav />}>
       <AdminLayoutPageContent>
@@ -260,6 +305,7 @@ export const PageAdminIntegrity: React.FC = () => {
               <Heading flex="none" size="md">
                 {t('management:integrity.title')}
               </Heading>
+              <Text>{t('management:integrity.description')}</Text>
               <Tooltip label={t('management:integrity.infoTooltip')}>
                 <IconButton
                   aria-label="Info"
@@ -271,6 +317,23 @@ export const PageAdminIntegrity: React.FC = () => {
               </Tooltip>
             </Flex>
           </HStack>
+
+          <Collapse in={isOpen}>
+            <Card
+              bg={colorMode === 'light' ? 'blue.50' : 'blue.900'}
+              borderWidth="1px"
+              borderColor={colorMode === 'light' ? 'blue.200' : 'blue.700'}
+            >
+              <CardBody>
+                <VStack align="stretch" spacing={4}>
+                  <Text fontWeight="medium">
+                    {t('management:integrity.title')}
+                  </Text>
+                  <Text>{t('management:integrity.description')}</Text>
+                </VStack>
+              </CardBody>
+            </Card>
+          </Collapse>
 
           <DataList>
             <DataListRow>
@@ -286,6 +349,7 @@ export const PageAdminIntegrity: React.FC = () => {
                         variant="ghost"
                         colorScheme="blue"
                         onClick={() => setSelectedDomains([])}
+                        isDisabled={isChecking || isCompleted}
                       >
                         {t('management:integrity.clearSelection')}
                       </Button>
@@ -305,6 +369,7 @@ export const PageAdminIntegrity: React.FC = () => {
                       borderColor={
                         colorMode === 'light' ? 'gray.200' : 'whiteAlpha.300'
                       }
+                      isDisabled={isChecking || isCompleted}
                     >
                       {domains?.items
                         .filter(
@@ -328,7 +393,6 @@ export const PageAdminIntegrity: React.FC = () => {
                       </Text>
                       <Stack spacing={3}>
                         {selectedDomains.map((domain) => {
-                          const logCount = domainCounts[domain] || 0;
                           return (
                             <Box
                               key={domain}
@@ -349,9 +413,6 @@ export const PageAdminIntegrity: React.FC = () => {
                               <Flex justify="space-between" align="center">
                                 <Box>
                                   <Text fontWeight="medium">{domain}</Text>
-                                  <Text fontSize="sm" color="text-dimmed">
-                                    {logCount.toLocaleString()} logs
-                                  </Text>
                                 </Box>
                                 <IconButton
                                   aria-label="Remove domain"
@@ -359,6 +420,7 @@ export const PageAdminIntegrity: React.FC = () => {
                                   size="sm"
                                   variant="ghost"
                                   colorScheme="blue"
+                                  ml={2}
                                   onClick={() =>
                                     setSelectedDomains(
                                       selectedDomains.filter(
@@ -366,6 +428,7 @@ export const PageAdminIntegrity: React.FC = () => {
                                       )
                                     )
                                   }
+                                  isDisabled={isChecking || isCompleted}
                                 />
                               </Flex>
                               {checkProgress[domain] && (
@@ -373,13 +436,17 @@ export const PageAdminIntegrity: React.FC = () => {
                                   <Flex justify="space-between" mb={1}>
                                     <Text fontSize="sm" color="text-dimmed">
                                       {checkProgress[domain].status ===
-                                        'pending' && '대기 중'}
+                                        'pending' &&
+                                        t('management:integrity.settings')}
                                       {checkProgress[domain].status ===
-                                        'checking' && '검사 중'}
+                                        'checking' &&
+                                        t('management:integrity.checking')}
                                       {checkProgress[domain].status ===
-                                        'completed' && '완료'}
+                                        'completed' &&
+                                        t('management:integrity.checkComplete')}
                                       {checkProgress[domain].status ===
-                                        'error' && '오류'}
+                                        'error' &&
+                                        t('management:integrity.error')}
                                     </Text>
                                     {checkProgress[domain].status ===
                                       'completed' &&
@@ -418,6 +485,11 @@ export const PageAdminIntegrity: React.FC = () => {
                                     }
                                     size="sm"
                                     borderRadius="full"
+                                    transition="all 1s ease-in-out"
+                                    isAnimated={
+                                      checkProgress[domain].status ===
+                                      'checking'
+                                    }
                                   />
                                 </Box>
                               )}
@@ -429,28 +501,16 @@ export const PageAdminIntegrity: React.FC = () => {
                   )}
 
                   <Flex gap={4} align="center">
-                    <Select
-                      value={timeRange}
-                      onChange={(e) =>
-                        setTimeRange(e.target.value as '24h' | '7d' | '30d')
-                      }
-                      width="120px"
-                      bg={colorMode === 'light' ? 'white' : 'gray.800'}
-                      borderColor={
-                        colorMode === 'light' ? 'gray.200' : 'whiteAlpha.300'
-                      }
-                    >
-                      <option value="24h">24h</option>
-                      <option value="7d">7d</option>
-                      <option value="30d">30d</option>
-                    </Select>
                     <Button
                       colorScheme="blue"
                       onClick={handleCheck}
                       isLoading={isChecking}
                       loadingText={t('management:integrity.checking')}
+                      isDisabled={isCompleted || selectedDomains.length === 0}
                     >
-                      {t('management:integrity.startCheck')}
+                      {isCompleted
+                        ? t('management:integrity.checkComplete')
+                        : t('management:integrity.startCheck')}
                     </Button>
                   </Flex>
                 </Stack>
@@ -638,69 +698,6 @@ export const PageAdminIntegrity: React.FC = () => {
                                     </Text>
                                   </Box>
                                 </Grid>
-
-                                <Box>
-                                  <Text fontSize="md" fontWeight="bold" mb={3}>
-                                    {t('management:integrity.sampleLogs')}
-                                  </Text>
-                                  <Table variant="simple" size="sm">
-                                    <Thead>
-                                      <Tr>
-                                        <Th>
-                                          {t('management:integrity.timestamp')}
-                                        </Th>
-                                        <Th>
-                                          {t('management:integrity.sourceIp')}
-                                        </Th>
-                                        <Th>
-                                          {t(
-                                            'management:integrity.destinationIp'
-                                          )}
-                                        </Th>
-                                        <Th>
-                                          {t(
-                                            'management:integrity.sourceCountry'
-                                          )}
-                                        </Th>
-                                        <Th>
-                                          {t(
-                                            'management:integrity.destinationCountry'
-                                          )}
-                                        </Th>
-                                        <Th>
-                                          {t('management:integrity.status')}
-                                        </Th>
-                                      </Tr>
-                                    </Thead>
-                                    <Tbody>
-                                      {detail.sampleLogs.map((log) => (
-                                        <Tr key={log.id}>
-                                          <Td>
-                                            {new Date(
-                                              log.timestamp
-                                            ).toLocaleString()}
-                                          </Td>
-                                          <Td>{log.sourceIp}</Td>
-                                          <Td>{log.destinationIp}</Td>
-                                          <Td>{log.sourceCountry}</Td>
-                                          <Td>{log.destinationCountry}</Td>
-                                          <Td>
-                                            <Badge
-                                              colorScheme={
-                                                log.status === 'matched'
-                                                  ? 'green'
-                                                  : 'red'
-                                              }
-                                              fontSize="xs"
-                                            >
-                                              {log.status}
-                                            </Badge>
-                                          </Td>
-                                        </Tr>
-                                      ))}
-                                    </Tbody>
-                                  </Table>
-                                </Box>
                               </Stack>
                             </AccordionPanel>
                           </AccordionItem>

@@ -62,13 +62,10 @@ export const integrityRouter = createTRPCRouter({
         select: { name: true },
       });
 
-      console.log('Active domains:', activeDomains);
-
       // 도메인별 로그 개수를 가져옵니다
-      const domainCounts = await Promise.all(
+      return await Promise.all(
         activeDomains.map(async (domain: Domain) => {
           try {
-            console.log(`Fetching logs for domain: ${domain.name}`);
             const domainPattern = domain.name
               .toLowerCase()
               .replace(/\./g, '-')
@@ -79,8 +76,6 @@ export const integrityRouter = createTRPCRouter({
               OpenSearchIndex[]
             >('/_cat/indices?format=json', 'GET', undefined);
 
-            console.log('Available indices:', indicesResponse);
-
             // 해당 도메인의 인덱스만 필터링합니다
             const domainIndices = indicesResponse
               .filter((index: OpenSearchIndex) =>
@@ -88,10 +83,7 @@ export const integrityRouter = createTRPCRouter({
               )
               .map((index: OpenSearchIndex) => index.index);
 
-            console.log(`Indices for domain ${domain.name}:`, domainIndices);
-
             if (domainIndices.length === 0) {
-              console.log(`No indices found for domain ${domain.name}`);
               return {
                 domain: domain.name,
                 count: 0,
@@ -131,7 +123,6 @@ export const integrityRouter = createTRPCRouter({
               (sum: number, count: number) => sum + count,
               0
             );
-            console.log(`Total count for ${domain.name}:`, totalCount);
 
             return {
               domain: domain.name,
@@ -149,9 +140,6 @@ export const integrityRouter = createTRPCRouter({
           }
         })
       );
-
-      console.log('Final domain counts:', domainCounts);
-      return domainCounts;
     }),
 
   checkIntegrity: protectedProcedure({
@@ -181,7 +169,6 @@ export const integrityRouter = createTRPCRouter({
       }
 
       try {
-        console.log(`Checking integrity for domain: ${domain}`);
         const domainPattern = domain
           .toLowerCase()
           .replace(/\./g, '-')
@@ -194,8 +181,6 @@ export const integrityRouter = createTRPCRouter({
           undefined
         );
 
-        console.log('Available indices:', indicesResponse);
-
         // 해당 도메인의 인덱스만 필터링합니다
         const domainIndices = indicesResponse
           .filter((index: OpenSearchIndex) =>
@@ -206,10 +191,7 @@ export const integrityRouter = createTRPCRouter({
             count: parseInt(index['docs.count'], 10),
           }));
 
-        console.log(`Indices for domain ${domain}:`, domainIndices);
-
         if (domainIndices.length === 0) {
-          console.log(`No indices found for domain ${domain}`);
           return {
             totalLogs: 0,
             matchedLogs: 0,
@@ -232,7 +214,6 @@ export const integrityRouter = createTRPCRouter({
           (sum, index) => sum + index.count,
           0
         );
-        console.log(`Total logs for ${domain}:`, totalLogs);
 
         const matchedLogs = totalLogs; // 100% 일치
         const unmatchedLogs = 0;
