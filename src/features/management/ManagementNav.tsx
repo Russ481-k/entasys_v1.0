@@ -2,6 +2,7 @@ import React from 'react';
 
 import { usePathname } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
+import { FaCheckCircle } from 'react-icons/fa';
 import { LuUsers } from 'react-icons/lu';
 import { TbWorld } from 'react-icons/tb';
 
@@ -31,6 +32,14 @@ export const AdminNav = () => {
           icon={TbWorld}
         >
           {t('management:nav.domains')}
+        </NavItem>
+        <NavItem
+          as={LinkAdmin}
+          href="/management/integrity"
+          isActive={isActive(`${ADMIN_PATH}/management/integrity`)}
+          icon={FaCheckCircle}
+        >
+          {t('management:nav.integrity')}
         </NavItem>
         {/* add menu NavItem */}
         {/* <NavItem
