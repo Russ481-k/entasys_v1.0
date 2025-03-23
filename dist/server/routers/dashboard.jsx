@@ -535,15 +535,6 @@ export const dashboardRouter = createTRPCRouter({
           },
         }
       );
-      // 디버깅을 위한 로그 추가
-      console.log(
-        'Source Country Query:',
-        JSON.stringify(sourceCountrySessions, null, 2)
-      );
-      console.log(
-        'Destination Country Query:',
-        JSON.stringify(destinationCountrySessions, null, 2)
-      );
       return {
         hourly_totals:
           ((_a = hourlyResult.aggregations.logs_per_hour) === null ||
