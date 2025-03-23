@@ -1,6 +1,13 @@
 import React from 'react';
 
-import { Box, Flex, Text, VStack, useColorMode } from '@chakra-ui/react';
+import {
+  Box,
+  Flex,
+  GridItem,
+  Text,
+  VStack,
+  useColorMode,
+} from '@chakra-ui/react';
 
 interface CpuUsageCardProps {
   title: string;
@@ -20,15 +27,22 @@ export const CpuUsageCard: React.FC<CpuUsageCardProps> = ({
   const { colorMode } = useColorMode();
 
   return (
-    <Box
-      bg={colorMode === 'light' ? 'white' : '#182232'}
-      borderWidth="1px"
-      borderColor={colorMode === 'light' ? 'gray.200' : 'whiteAlpha.300'}
+    <GridItem
       borderRadius="lg"
+      bg={colorMode === 'light' ? 'white' : '#182232'}
+      borderWidth={1}
+      borderColor={colorMode === 'light' ? 'gray.200' : 'whiteAlpha.300'}
+      colSpan={1}
       p={4}
-      height="100%"
-      display="flex"
-      flexDirection="column"
+      overflow="hidden"
+      w="100%"
+      height={{
+        base: '220px',
+        sm: '220px',
+        md: '220px',
+        lg: '220px',
+        xl: '220px',
+      }}
     >
       <Box
         display="grid"
@@ -36,7 +50,7 @@ export const CpuUsageCard: React.FC<CpuUsageCardProps> = ({
         alignItems="center"
         textAlign="center"
         justifyContent="center"
-        mb={4}
+        mb={7}
       >
         <Text fontSize="lg" fontWeight="bold">
           {title}
@@ -88,6 +102,6 @@ export const CpuUsageCard: React.FC<CpuUsageCardProps> = ({
           ))}
         </VStack>
       </Box>
-    </Box>
+    </GridItem>
   );
 };

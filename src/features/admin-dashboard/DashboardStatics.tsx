@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { Grid, GridItem } from '@chakra-ui/react';
+import { Grid } from '@chakra-ui/react';
 
 import { trpc } from '@/lib/trpc/client';
 
@@ -75,41 +75,36 @@ export const DashboardStatics = () => {
         xl: 'repeat(6, 1fr)',
       }}
     >
-      <GridItem colSpan={{ base: 1, md: 2, lg: 1 }}>
-        <LogsCountCard
-          title="로그 통계"
-          subtitle="Logs Statistics"
-          data={[
-            {
-              label: '초당 로그량(lps)',
-              count: logsPerSecond || 0,
-            },
-            {
-              label: '일별 로그량(lpd)',
-              count: logsPerDay || 0,
-            },
-          ]}
-        />
-      </GridItem>
-
-      <GridItem colSpan={{ base: 1, md: 2, lg: 1 }}>
-        <CpuUsageCard
-          title="하드웨어 사용량"
-          subtitle="Hardware Usage"
-          data={[
-            {
-              label: 'CPU 사용량',
-              value: cpuUsage || 0,
-              unit: '%',
-            },
-            {
-              label: 'Memory 사용량',
-              value: memoryUsage || 0,
-              unit: '%',
-            },
-          ]}
-        />
-      </GridItem>
+      <LogsCountCard
+        title="로그 통계"
+        subtitle="Logs Statistics"
+        data={[
+          {
+            label: '초당 로그량(lps)',
+            count: logsPerSecond || 0,
+          },
+          {
+            label: '일별 로그량(lpd)',
+            count: logsPerDay || 0,
+          },
+        ]}
+      />
+      <CpuUsageCard
+        title="하드웨어 사용량"
+        subtitle="Hardware Usage"
+        data={[
+          {
+            label: 'CPU',
+            value: cpuUsage || 0,
+            unit: '%',
+          },
+          {
+            label: 'Memory',
+            value: memoryUsage || 0,
+            unit: '%',
+          },
+        ]}
+      />
       <DiskUsageCard diskUsage={diskUsage || { total: 0, used: 0, usage: 0 }} />
       <CountrySessionCard
         title="도착지 국가 세션"

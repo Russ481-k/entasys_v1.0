@@ -10,9 +10,6 @@ import {
   Badge,
   Box,
   Button,
-  Card,
-  CardBody,
-  Collapse,
   Flex,
   Grid,
   HStack,
@@ -30,7 +27,6 @@ import {
   Stack,
   Text,
   Tooltip,
-  VStack,
   useColorMode,
   useDisclosure,
   useToast,
@@ -248,8 +244,8 @@ export const PageAdminIntegrity: React.FC = () => {
   return (
     <AdminLayoutPage containerMaxWidth="container.xl" nav={<AdminNav />}>
       <AdminLayoutPageContent>
-        <Stack spacing={6}>
-          <HStack spacing={4} alignItems={{ base: 'end', md: 'center' }}>
+        <Stack spacing={3}>
+          <HStack spacing={3} alignItems={{ base: 'end', md: 'center' }}>
             <Flex
               direction={{ base: 'column', md: 'row' }}
               rowGap={2}
@@ -261,35 +257,22 @@ export const PageAdminIntegrity: React.FC = () => {
                 {t('management:integrity.title')}
               </Heading>
               <Text>{t('management:integrity.description')}</Text>
-              <Tooltip label={t('management:integrity.infoTooltip')}>
-                <IconButton
-                  aria-label="Info"
-                  icon={<InfoIcon />}
+              <Tooltip
+                label={t('management:integrity.infoTooltip')}
+                hasArrow
+                placement="right"
+              >
+                <Flex
+                  h={8}
+                  alignItems="center"
                   onClick={onOpen}
-                  variant="ghost"
-                  colorScheme="blue"
-                />
+                  cursor="pointer"
+                >
+                  <InfoIcon aria-label="Info" color="text-dimmed" />
+                </Flex>
               </Tooltip>
             </Flex>
           </HStack>
-
-          <Collapse in={isOpen}>
-            <Card
-              bg={colorMode === 'light' ? 'blue.50' : 'blue.900'}
-              borderWidth="1px"
-              borderColor={colorMode === 'light' ? 'blue.200' : 'blue.700'}
-            >
-              <CardBody>
-                <VStack align="stretch" spacing={4}>
-                  <Text fontWeight="medium">
-                    {t('management:integrity.title')}
-                  </Text>
-                  <Text>{t('management:integrity.description')}</Text>
-                </VStack>
-              </CardBody>
-            </Card>
-          </Collapse>
-
           <DataList>
             <DataListRow>
               <DataListCell>
