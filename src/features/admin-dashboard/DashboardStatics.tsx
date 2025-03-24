@@ -108,13 +108,13 @@ export const DashboardStatics = () => {
       <DiskUsageCard diskUsage={diskUsage || { total: 0, used: 0, usage: 0 }} />
       <CountrySessionCard
         title="도착지 국가 세션"
-        subtitle="Top 5 Destination Countries"
+        subtitle="Top 10 Destination Countries"
         data={destinationCountrySessions}
         type="destination"
       />
       <CountrySessionCard
         title="출발지 국가 세션"
-        subtitle="Top 5 Source Countries"
+        subtitle="Top 10 Source Countries"
         data={sourceCountrySessions}
         type="source"
       />

@@ -101,7 +101,7 @@ export const DiskUsageCard = ({
           </Text>
         </Box>
         <Flex justifyContent="center" alignItems="center" w="100%" h="100px">
-          <Table size="xs" variant="simple" w="30%" mt="-40px">
+          <Table size="xs" variant="simple" w="30%" mt="-40px" zIndex={1}>
             <Thead>
               <Tr>
                 <Th fontSize="xs">Total</Th>

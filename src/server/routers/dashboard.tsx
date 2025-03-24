@@ -636,7 +636,7 @@ export const dashboardRouter = createTRPCRouter({
                 terms: {
                   field: 'sourceCountry.keyword',
                   order: { _count: 'desc' },
-                  size: 10000,
+                  size: 1000,
                 },
               },
             },
@@ -657,7 +657,7 @@ export const dashboardRouter = createTRPCRouter({
                 terms: {
                   field: 'destinationCountry.keyword',
                   order: { _count: 'desc' },
-                  size: 10000,
+                  size: 1000,
                 },
               },
             },
@@ -688,19 +688,21 @@ export const dashboardRouter = createTRPCRouter({
           ) || [],
         domain_monthly_totals: domainMonthlyResults,
         source_country_sessions:
-          sourceCountrySessions.aggregations?.source_country?.buckets.map(
-            (bucket) => ({
+          sourceCountrySessions.aggregations?.source_country?.buckets
+            .filter((bucket) => /^[^0-9]/.test(bucket.key))
+            .slice(0, 10)
+            .map((bucket) => ({
               country: bucket.key,
               count: bucket.doc_count,
-            })
-          ) || [],
+            })) || [],
         destination_country_sessions:
-          destinationCountrySessions.aggregations?.destination_country?.buckets.map(
-            (bucket) => ({
+          destinationCountrySessions.aggregations?.destination_country?.buckets
+            .filter((bucket) => /^[^0-9]/.test(bucket.key))
+            .slice(0, 10)
+            .map((bucket) => ({
               country: bucket.key,
               count: bucket.doc_count,
-            })
-          ) || [],
+            })) || [],
       };
     } catch (error) {
       console.error('Error in getChartMetrics:', error);

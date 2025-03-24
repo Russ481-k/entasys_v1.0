@@ -88,11 +88,364 @@ export interface ScrollResponse {
   scrollId?: string;
 }
 
+export interface OpenSearchClusterHealth {
+  cluster_name: string;
+  status: string;
+  number_of_nodes: number;
+  number_of_data_nodes: number;
+  active_primary_shards: number;
+  active_shards: number;
+  relocating_shards: number;
+  initializing_shards: number;
+  unassigned_shards: number;
+  delayed_unassigned_shards: number;
+  number_of_pending_tasks: number;
+  number_of_in_flight_fetch: number;
+  task_max_waiting_in_queue_millis: number;
+  active_shards_percent_as_number: number;
+}
+
+export interface OpenSearchClusterStats {
+  cluster_name: string;
+  cluster_uuid: string;
+  version: {
+    number: string;
+    build_type: string;
+    build_hash: string;
+    build_date: string;
+    build_snapshot: boolean;
+    lucene_version: string;
+    minimum_wire_compatibility_version: string;
+    minimum_index_compatibility_version: string;
+  };
+  nodes: {
+    count: {
+      total: number;
+      data: number;
+      coordinating_only: number;
+      master: number;
+      ingest: number;
+    };
+    versions: string[];
+    os: {
+      available_processors: number;
+      allocated_processors: number;
+      names: Array<{
+        name: string;
+        count: number;
+      }>;
+      mem: {
+        total_in_bytes: number;
+        free_in_bytes: number;
+        used_in_bytes: number;
+        free_percent: number;
+        used_percent: number;
+      };
+    };
+    process: {
+      cpu: {
+        percent: number;
+      };
+      open_file_descriptors: {
+        min: number;
+        max: number;
+        avg: number;
+      };
+    };
+    jvm: {
+      max_uptime_in_millis: number;
+      versions: Array<{
+        version: string;
+        vm_name: string;
+        vm_version: string;
+        vm_vendor: string;
+        count: number;
+      }>;
+      mem: {
+        heap_used_in_bytes: number;
+        heap_used_percent: number;
+        heap_max_in_bytes: number;
+        non_heap_used_in_bytes: number;
+        non_heap_max_in_bytes: number;
+      };
+      gc: {
+        collectors: {
+          [key: string]: {
+            collection_count: number;
+            collection_time_in_millis: number;
+          };
+        };
+      };
+    };
+    fs: {
+      total_in_bytes: number;
+      free_in_bytes: number;
+      available_in_bytes: number;
+    };
+    plugins: Array<{
+      name: string;
+      version: string;
+      description: string;
+      classname: string;
+      licensed: boolean;
+    }>;
+  };
+  indices: {
+    count: number;
+    shards: {
+      total: number;
+      primaries: number;
+      replication: number;
+    };
+    docs: {
+      count: number;
+      deleted: number;
+    };
+    store: {
+      size_in_bytes: number;
+      total_data_set_size_in_bytes: number;
+      reserved_in_bytes: number;
+    };
+    indexing: {
+      index_total: number;
+      index_time_in_millis: number;
+      index_current: number;
+      index_failed: number;
+      delete_total: number;
+      delete_time_in_millis: number;
+      delete_current: number;
+      noop_update_total: number;
+      is_throttled: boolean;
+      throttle_time_in_millis: number;
+    };
+    get: {
+      total: number;
+      time_in_millis: number;
+      exists_total: number;
+      exists_time_in_millis: number;
+      missing_total: number;
+      missing_time_in_millis: number;
+      current: number;
+    };
+    search: {
+      open_contexts: number;
+      query_total: number;
+      query_time_in_millis: number;
+      query_current: number;
+      fetch_total: number;
+      fetch_time_in_millis: number;
+      fetch_current: number;
+      scroll_total: number;
+      scroll_time_in_millis: number;
+      scroll_current: number;
+      suggest_total: number;
+      suggest_time_in_millis: number;
+      suggest_current: number;
+    };
+    merges: {
+      current: number;
+      current_docs: number;
+      current_size_in_bytes: number;
+      total: number;
+      total_docs: number;
+      total_size_in_bytes: number;
+      total_stopped_time_in_millis: number;
+      total_throttled_time_in_millis: number;
+      total_auto_throttle_in_bytes: number;
+    };
+    refresh: {
+      total: number;
+      total_time_in_millis: number;
+      listeners: number;
+    };
+    flush: {
+      total: number;
+      periodic: number;
+      total_time_in_millis: number;
+    };
+    warmer: {
+      current: number;
+      total: number;
+      total_time_in_millis: number;
+    };
+    query_cache: {
+      memory_size_in_bytes: number;
+      total_count: number;
+      hit_count: number;
+      miss_count: number;
+      cache_size: number;
+      cache_count: number;
+      evictions: number;
+    };
+    fielddata: {
+      memory_size_in_bytes: number;
+      evictions: number;
+    };
+    completion: {
+      size_in_bytes: number;
+    };
+    segments: {
+      count: number;
+      memory_in_bytes: number;
+      terms_memory_in_bytes: number;
+      stored_fields_memory_in_bytes: number;
+      term_vectors_memory_in_bytes: number;
+      norms_memory_in_bytes: number;
+      points_memory_in_bytes: number;
+      doc_values_memory_in_bytes: number;
+      index_writer_memory_in_bytes: number;
+      version_map_memory_in_bytes: number;
+      fixed_bit_set_memory_in_bytes: number;
+      max_unsafe_auto_id_timestamp: number;
+      file_sizes: Record<string, unknown>;
+    };
+    translog: {
+      operations: number;
+      size_in_bytes: number;
+      uncommitted_operations: number;
+      uncommitted_size_in_bytes: number;
+      earliest_last_modified_age: number;
+    };
+    request_cache: {
+      memory_size_in_bytes: number;
+      evictions: number;
+      hit_count: number;
+      miss_count: number;
+    };
+    recovery: {
+      current_as_source: number;
+      current_as_target: number;
+      throttle_time_in_millis: number;
+    };
+  };
+}
+
+export interface OpenSearchIndexStats {
+  index: string;
+  health: string;
+  status: string;
+  uuid: string;
+  pri: number;
+  rep: number;
+  'docs.count': string;
+  'docs.deleted': string;
+  'store.size': string;
+  'store.total_data_set_size': string;
+  'store.reserved': string;
+  'indexing.index_total': string;
+  'indexing.index_time_in_millis': string;
+  'indexing.index_current': string;
+  'indexing.index_failed': string;
+  'indexing.delete_total': string;
+  'indexing.delete_time_in_millis': string;
+  'indexing.delete_current': string;
+  'indexing.noop_update_total': string;
+  'indexing.is_throttled': string;
+  'indexing.throttle_time_in_millis': string;
+  'get.total': string;
+  'get.time_in_millis': string;
+  'get.exists_total': string;
+  'get.exists_time_in_millis': string;
+  'get.missing_total': string;
+  'get.missing_time_in_millis': string;
+  'get.current': string;
+  'search.open_contexts': string;
+  'search.query_total': string;
+  'search.query_time_in_millis': string;
+  'search.query_current': string;
+  'search.fetch_total': string;
+  'search.fetch_time_in_millis': string;
+  'search.fetch_current': string;
+  'search.scroll_total': string;
+  'search.scroll_time_in_millis': string;
+  'search.scroll_current': string;
+  'search.suggest_total': string;
+  'search.suggest_time_in_millis': string;
+  'search.suggest_current': string;
+  'merges.current': string;
+  'merges.current_docs': string;
+  'merges.current_size_in_bytes': string;
+  'merges.total': string;
+  'merges.total_docs': string;
+  'merges.total_size_in_bytes': string;
+  'merges.total_stopped_time_in_millis': string;
+  'merges.total_throttled_time_in_millis': string;
+  'merges.total_auto_throttle_in_bytes': string;
+  'refresh.total': string;
+  'refresh.total_time_in_millis': string;
+  'refresh.listeners': string;
+  'flush.total': string;
+  'flush.periodic': string;
+  'flush.total_time_in_millis': string;
+  'warmer.current': string;
+  'warmer.total': string;
+  'warmer.total_time_in_millis': string;
+  'query_cache.memory_size_in_bytes': string;
+  'query_cache.total_count': string;
+  'query_cache.hit_count': string;
+  'query_cache.miss_count': string;
+  'query_cache.cache_size': string;
+  'query_cache.cache_count': string;
+  'query_cache.evictions': string;
+  'fielddata.memory_size_in_bytes': string;
+  'fielddata.evictions': string;
+  'completion.size_in_bytes': string;
+  'segments.count': string;
+  'segments.memory_in_bytes': string;
+  'segments.terms_memory_in_bytes': string;
+  'segments.stored_fields_memory_in_bytes': string;
+  'segments.term_vectors_memory_in_bytes': string;
+  'segments.norms_memory_in_bytes': string;
+  'segments.points_memory_in_bytes': string;
+  'segments.doc_values_memory_in_bytes': string;
+  'segments.index_writer_memory_in_bytes': string;
+  'segments.version_map_memory_in_bytes': string;
+  'segments.fixed_bit_set_memory_in_bytes': string;
+  'segments.max_unsafe_auto_id_timestamp': string;
+  'translog.operations': string;
+  'translog.size_in_bytes': string;
+  'translog.uncommitted_operations': string;
+  'translog.uncommitted_size_in_bytes': string;
+  'translog.earliest_last_modified_age': string;
+  'request_cache.memory_size_in_bytes': string;
+  'request_cache.evictions': string;
+  'request_cache.hit_count': string;
+  'request_cache.miss_count': string;
+  'recovery.current_as_source': string;
+  'recovery.current_as_target': string;
+  'recovery.throttle_time_in_millis': string;
+}
+
+export interface OpenSearchShardStats {
+  index: string;
+  shard: string;
+  prirep: string;
+  state: string;
+  docs: string;
+  store: string;
+  ip: string;
+  node: string;
+}
+
+export interface OpenSearchLogDetails {
+  duration?: string;
+  statusCode?: number;
+  [key: string]: unknown;
+}
+
+export interface OpenSearchError {
+  message: string;
+  code?: string;
+  status?: number;
+  [key: string]: unknown;
+}
+
 export class OpenSearchClient {
   private static instance: OpenSearchClient;
   private readonly baseOptions: http.RequestOptions;
   private searchSessionService: SearchSessionService;
   private activeScrolls: Map<string, string>; // sessionId -> scrollId 매핑
+  private readonly logger: Console;
 
   private constructor() {
     const opensearchPort = Number(env.OPENSEARCH_PORT);
@@ -114,6 +467,7 @@ export class OpenSearchClient {
 
     this.searchSessionService = new SearchSessionService(prisma);
     this.activeScrolls = new Map();
+    this.logger = console;
   }
 
   public static getInstance(): OpenSearchClient {
@@ -121,6 +475,14 @@ export class OpenSearchClient {
       OpenSearchClient.instance = new OpenSearchClient();
     }
     return OpenSearchClient.instance;
+  }
+
+  private logOperation(operation: string, details?: OpenSearchLogDetails) {
+    this.logger.log(`[OpenSearch] ${operation}`, details ? details : '');
+  }
+
+  private logError(operation: string, error: OpenSearchError) {
+    this.logger.error(`[OpenSearch] ${operation} failed:`, error);
   }
 
   public async count(params: {
@@ -134,7 +496,14 @@ export class OpenSearchClient {
     });
   }
 
-  async request<T>({ path, method, body }: OpenSearchOptions): Promise<T> {
+  public async request<T>({
+    path,
+    method,
+    body,
+  }: OpenSearchOptions): Promise<T> {
+    const startTime = Date.now();
+    this.logOperation(`${method} ${path}`, body ? { body } : undefined);
+
     const options: http.RequestOptions = {
       ...this.baseOptions,
       path,
@@ -148,7 +517,9 @@ export class OpenSearchClient {
 
         res.setTimeout(30000, () => {
           req.destroy();
-          reject(new Error('Response timeout'));
+          const error = new Error('Response timeout');
+          this.logError(`${method} ${path}`, { message: error.message });
+          reject(error);
         });
 
         res.on('data', (chunk) => {
@@ -156,40 +527,43 @@ export class OpenSearchClient {
         });
 
         res.on('end', () => {
+          const duration = Date.now() - startTime;
           try {
             if (res.statusCode && res.statusCode >= 400) {
-              console.error('[OpenSearch] Request failed:', {
-                statusCode: res.statusCode,
-                statusMessage: res.statusMessage,
-                data,
-              });
-              reject(
-                new Error(
-                  `OpenSearch request failed with status ${res.statusCode}: ${data}`
-                )
+              const error = new Error(
+                `OpenSearch request failed with status ${res.statusCode}: ${data}`
               );
+              this.logError(`${method} ${path}`, { message: error.message });
+              reject(error);
               return;
             }
             const parsedData = JSON.parse(data);
+            this.logOperation(`${method} ${path} completed`, {
+              duration: `${duration}ms`,
+              statusCode: res.statusCode,
+            });
             resolve(parsedData);
           } catch (e) {
-            console.error('[OpenSearch] Failed to parse response:', e);
-            reject(new Error(`Failed to parse OpenSearch response: ${e}`));
+            const error = new Error(
+              `Failed to parse OpenSearch response: ${e}`
+            );
+            this.logError(`${method} ${path}`, { message: error.message });
+            reject(error);
           }
         });
       });
 
       req.setTimeout(30000, () => {
         req.destroy();
-        reject(new Error('Request timeout'));
+        const error = new Error('Request timeout');
+        this.logError(`${method} ${path}`, { message: error.message });
+        reject(error);
       });
 
       req.on('error', (e) => {
-        console.error('[OpenSearch] Network error:', {
-          message: e.message,
-          stack: e.stack,
-        });
-        reject(new Error(`OpenSearch request failed: ${e.message}`));
+        const error = new Error(`OpenSearch request failed: ${e.message}`);
+        this.logError(`${method} ${path}`, { message: error.message });
+        reject(error);
       });
 
       if (body) {
@@ -463,85 +837,97 @@ export class OpenSearchClient {
   }
 
   public async createILMPolicy(): Promise<OpenSearchActionResponse> {
-    return this.request<OpenSearchActionResponse>({
-      path: '/_plugins/_ism/policies/logs_policy',
-      method: 'PUT',
-      body: {
-        policy: {
-          description: 'Hot-Warm-Cold-Delete workflow for logs',
-          default_state: 'hot',
-          states: [
-            {
-              name: 'hot',
-              actions: [
-                {
-                  rollover: {
-                    min_doc_count: 5000000,
-                    min_size: '50gb',
-                    min_index_age: '1d',
+    try {
+      return await this.request<OpenSearchActionResponse>({
+        path: '/_plugins/_ism/policies/logs_policy',
+        method: 'PUT',
+        body: {
+          policy: {
+            description: 'Hot-Warm-Cold-Delete workflow for logs',
+            default_state: 'hot',
+            states: [
+              {
+                name: 'hot',
+                actions: [
+                  {
+                    rollover: {
+                      min_doc_count: 5000000,
+                      min_size: '50gb',
+                      min_index_age: '1d',
+                    },
                   },
-                },
-              ],
-              transitions: [
-                {
-                  state_name: 'warm',
-                  conditions: {
-                    min_index_age: '2d',
+                ],
+                transitions: [
+                  {
+                    state_name: 'warm',
+                    conditions: {
+                      min_index_age: '2d',
+                    },
                   },
-                },
-              ],
-            },
-            {
-              name: 'warm',
-              actions: [
-                {
-                  replica_count: {
-                    number_of_replicas: 0,
+                ],
+              },
+              {
+                name: 'warm',
+                actions: [
+                  {
+                    replica_count: {
+                      number_of_replicas: 0,
+                    },
                   },
-                },
-                {
-                  force_merge: {
-                    max_num_segments: 1,
+                  {
+                    force_merge: {
+                      max_num_segments: 1,
+                    },
                   },
-                },
-              ],
-              transitions: [
-                {
-                  state_name: 'cold',
-                  conditions: {
-                    min_index_age: '7d',
+                ],
+                transitions: [
+                  {
+                    state_name: 'cold',
+                    conditions: {
+                      min_index_age: '7d',
+                    },
                   },
-                },
-              ],
-            },
-            {
-              name: 'cold',
-              actions: [
-                {
-                  read_only: {},
-                },
-              ],
-              transitions: [
-                {
-                  state_name: 'delete',
-                  conditions: {
-                    min_index_age: '30d',
+                ],
+              },
+              {
+                name: 'cold',
+                actions: [
+                  {
+                    read_only: {},
                   },
-                },
-              ],
-            },
-            {
-              name: 'delete',
-              actions: [
-                {
-                  delete: {},
-                },
-              ],
-            },
-          ],
+                ],
+                transitions: [
+                  {
+                    state_name: 'delete',
+                    conditions: {
+                      min_index_age: '30d',
+                    },
+                  },
+                ],
+              },
+              {
+                name: 'delete',
+                actions: [
+                  {
+                    delete: {},
+                  },
+                ],
+              },
+            ],
+          },
         },
-      },
-    });
+      });
+    } catch (error) {
+      // 정책이 이미 존재하는 경우 성공으로 처리
+      if (
+        error instanceof Error &&
+        error.message.includes('version_conflict_engine_exception')
+      ) {
+        this.logOperation('ILM policy already exists');
+        return { acknowledged: true };
+      }
+      throw error;
+    }
   }
 
   public async getIndices(
@@ -568,6 +954,36 @@ export class OpenSearchClient {
     return this.request<OpenSearchActionResponse>({
       path: `/${pattern}`,
       method: 'DELETE',
+    });
+  }
+
+  public async getClusterHealth(): Promise<OpenSearchClusterHealth> {
+    return this.request({
+      path: '/_cluster/health',
+      method: 'GET',
+    });
+  }
+
+  public async getClusterStats(): Promise<OpenSearchClusterStats> {
+    return this.request({
+      path: '/_cluster/stats',
+      method: 'GET',
+    });
+  }
+
+  public async getIndicesStats(
+    pattern?: string
+  ): Promise<OpenSearchIndexStats[]> {
+    return this.request({
+      path: `/_cat/indices/${pattern || '*'}?format=json&v=true`,
+      method: 'GET',
+    });
+  }
+
+  public async getShardStats(): Promise<OpenSearchShardStats[]> {
+    return this.request({
+      path: '/_cat/shards?format=json&v=true',
+      method: 'GET',
     });
   }
 }

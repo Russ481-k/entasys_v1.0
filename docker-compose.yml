@@ -73,7 +73,7 @@ services:
       - 'cluster.routing.allocation.disk.watermark.low=85%'
       - 'cluster.routing.allocation.disk.watermark.high=90%'
       - 'cluster.routing.allocation.disk.watermark.flood_stage=95%'
-      - 'cluster.max_shards_per_node=600'
+      - 'cluster.max_shards_per_node=3000'
       - 'http.max_content_length=500mb'
       - 'http.compression=true'
       - 'search.max_open_scroll_context=2000'

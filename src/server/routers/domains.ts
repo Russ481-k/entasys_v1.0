@@ -150,17 +150,20 @@ export const domainsRouter = createTRPCRouter({
           });
         }
 
-        // Create domain in database
-        const domain = await ctx.db.domain.create({
-          data: input,
+        // 트랜잭션으로 도메인 생성 및 OpenSearch 설정
+        return await ctx.db.$transaction(async (tx) => {
+          // Create domain in database
+          const newDomain = await tx.domain.create({
+            data: input,
+          });
+
+          // Create OpenSearch index template and ILM policy
+          const opensearch = OpenSearchClient.getInstance();
+          await opensearch.createILMPolicy();
+          await opensearch.updateIndexTemplate(newDomain.name);
+
+          return newDomain;
         });
-
-        // Create OpenSearch index template and ILM policy
-        const opensearch = OpenSearchClient.getInstance();
-        await opensearch.createILMPolicy();
-        await opensearch.updateIndexTemplate(domain.name);
-
-        return domain;
       } catch (error) {
         if (error instanceof TRPCError) {
           throw error;
@@ -200,31 +203,35 @@ export const domainsRouter = createTRPCRouter({
       const { id, ...data } = input;
 
       try {
-        // Get old domain name
-        const oldDomain = await ctx.db.domain.findUnique({
-          where: { id },
-        });
+        // 트랜잭션으로 도메인 수정 및 OpenSearch 설정
 
-        if (!oldDomain) {
-          throw new TRPCError({
-            code: 'NOT_FOUND',
+        return await ctx.db.$transaction(async (tx) => {
+          // Get old domain name
+          const oldDomain = await tx.domain.findUnique({
+            where: { id },
           });
-        }
 
-        // Update domain in database
-        const updatedDomain = await ctx.db.domain.update({
-          where: { id },
-          data,
+          if (!oldDomain) {
+            throw new TRPCError({
+              code: 'NOT_FOUND',
+            });
+          }
+
+          // Update domain in database
+          const updated = await tx.domain.update({
+            where: { id },
+            data,
+          });
+
+          // If domain name changed, update OpenSearch template
+          if (data.name && oldDomain.name !== data.name) {
+            const opensearch = OpenSearchClient.getInstance();
+            await opensearch.deleteIndexTemplate(oldDomain.name);
+            await opensearch.updateIndexTemplate(data.name);
+          }
+
+          return updated;
         });
-
-        // If domain name changed, update OpenSearch template
-        if (data.name && oldDomain.name !== data.name) {
-          const opensearch = OpenSearchClient.getInstance();
-          await opensearch.deleteIndexTemplate(oldDomain.name);
-          await opensearch.updateIndexTemplate(data.name);
-        }
-
-        return updatedDomain;
       } catch (error) {
         throw new ExtendedTRPCError({
           code: 'BAD_REQUEST',
@@ -248,34 +255,37 @@ export const domainsRouter = createTRPCRouter({
     .output(zDomain)
     .mutation(async ({ ctx, input }) => {
       try {
-        // Get domain name before deletion
-        const domain = await ctx.db.domain.findUnique({
-          where: { id: input.id },
-        });
-
-        if (!domain) {
-          throw new TRPCError({
-            code: 'NOT_FOUND',
+        // 트랜잭션으로 도메인 삭제 및 OpenSearch 설정
+        return await ctx.db.$transaction(async (tx) => {
+          // Get domain name before deletion
+          const domain = await tx.domain.findUnique({
+            where: { id: input.id },
           });
-        }
 
-        // Delete domain from database
-        const deletedDomain = await ctx.db.domain.delete({
-          where: { id: input.id },
+          if (!domain) {
+            throw new TRPCError({
+              code: 'NOT_FOUND',
+            });
+          }
+
+          // Delete domain from database
+          const deleted = await tx.domain.delete({
+            where: { id: input.id },
+          });
+
+          // Delete OpenSearch template and indices
+          const opensearch = OpenSearchClient.getInstance();
+          await opensearch.deleteIndexTemplate(domain.name);
+
+          // Delete all indices related to this domain
+          const pattern = `*_${domain.name.toLowerCase()}_*`;
+          const indices = await opensearch.getIndices(pattern);
+          if (indices.length > 0) {
+            await opensearch.deleteIndices(pattern);
+          }
+
+          return deleted;
         });
-
-        // Delete OpenSearch template and indices
-        const opensearch = OpenSearchClient.getInstance();
-        await opensearch.deleteIndexTemplate(domain.name);
-
-        // Delete all indices related to this domain
-        const pattern = `*_${domain.name.toLowerCase()}_*`;
-        const indices = await opensearch.getIndices(pattern);
-        if (indices.length > 0) {
-          await opensearch.deleteIndices(pattern);
-        }
-
-        return deletedDomain;
       } catch (error) {
         throw new ExtendedTRPCError({
           code: 'BAD_REQUEST',

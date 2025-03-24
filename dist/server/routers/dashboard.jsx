@@ -510,7 +510,7 @@ export const dashboardRouter = createTRPCRouter({
               terms: {
                 field: 'sourceCountry.keyword',
                 order: { _count: 'desc' },
-                size: 10000,
+                size: 1000,
               },
             },
           },
@@ -529,7 +529,7 @@ export const dashboardRouter = createTRPCRouter({
               terms: {
                 field: 'destinationCountry.keyword',
                 order: { _count: 'desc' },
-                size: 10000,
+                size: 1000,
               },
             },
           },
@@ -567,10 +567,13 @@ export const dashboardRouter = createTRPCRouter({
               ? void 0
               : _d.source_country) === null || _e === void 0
             ? void 0
-            : _e.buckets.map((bucket) => ({
-                country: bucket.key,
-                count: bucket.doc_count,
-              }))) || [],
+            : _e.buckets
+                .filter((bucket) => /^[^0-9]/.test(bucket.key))
+                .slice(0, 10)
+                .map((bucket) => ({
+                  country: bucket.key,
+                  count: bucket.doc_count,
+                }))) || [],
         destination_country_sessions:
           ((_g =
             (_f = destinationCountrySessions.aggregations) === null ||
@@ -578,10 +581,13 @@ export const dashboardRouter = createTRPCRouter({
               ? void 0
               : _f.destination_country) === null || _g === void 0
             ? void 0
-            : _g.buckets.map((bucket) => ({
-                country: bucket.key,
-                count: bucket.doc_count,
-              }))) || [],
+            : _g.buckets
+                .filter((bucket) => /^[^0-9]/.test(bucket.key))
+                .slice(0, 10)
+                .map((bucket) => ({
+                  country: bucket.key,
+                  count: bucket.doc_count,
+                }))) || [],
       };
     } catch (error) {
       console.error('Error in getChartMetrics:', error);

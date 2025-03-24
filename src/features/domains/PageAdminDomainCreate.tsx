@@ -52,13 +52,13 @@ export default function PageAdminDomainCreate() {
   });
 
   return (
-    <AdminLayoutPage containerMaxWidth="container.md">
-      <Form
-        {...form}
-        onSubmit={(values) => {
-          createDomain.mutate(values);
-        }}
-      >
+    <Form
+      {...form}
+      onSubmit={(values) => {
+        createDomain.mutate(values);
+      }}
+    >
+      <AdminLayoutPage w="100%">
         <AdminLayoutPageTopBar
           leftActions={<AdminBackButton withConfirm={form.formState.isDirty} />}
           rightActions={
@@ -79,7 +79,7 @@ export default function PageAdminDomainCreate() {
         <AdminLayoutPageContent>
           <DomainForm />
         </AdminLayoutPageContent>
-      </Form>
-    </AdminLayoutPage>
+      </AdminLayoutPage>
+    </Form>
   );
 }

@@ -24,12 +24,19 @@ export class OpenSearchClient {
     };
     this.searchSessionService = new SearchSessionService(prisma);
     this.activeScrolls = new Map();
+    this.logger = console;
   }
   static getInstance() {
     if (!OpenSearchClient.instance) {
       OpenSearchClient.instance = new OpenSearchClient();
     }
     return OpenSearchClient.instance;
+  }
+  logOperation(operation, details) {
+    this.logger.log(`[OpenSearch] ${operation}`, details ? details : '');
+  }
+  logError(operation, error) {
+    this.logger.error(`[OpenSearch] ${operation} failed:`, error);
   }
   async count(params) {
     return this.request({
@@ -39,6 +46,8 @@ export class OpenSearchClient {
     });
   }
   async request({ path, method, body }) {
+    const startTime = Date.now();
+    this.logOperation(`${method} ${path}`, body ? { body } : undefined);
     const options = Object.assign(Object.assign({}, this.baseOptions), {
       path,
       method,
@@ -49,44 +58,49 @@ export class OpenSearchClient {
         let data = '';
         res.setTimeout(30000, () => {
           req.destroy();
-          reject(new Error('Response timeout'));
+          const error = new Error('Response timeout');
+          this.logError(`${method} ${path}`, { message: error.message });
+          reject(error);
         });
         res.on('data', (chunk) => {
           data += chunk;
         });
         res.on('end', () => {
+          const duration = Date.now() - startTime;
           try {
             if (res.statusCode && res.statusCode >= 400) {
-              console.error('[OpenSearch] Request failed:', {
-                statusCode: res.statusCode,
-                statusMessage: res.statusMessage,
-                data,
-              });
-              reject(
-                new Error(
-                  `OpenSearch request failed with status ${res.statusCode}: ${data}`
-                )
+              const error = new Error(
+                `OpenSearch request failed with status ${res.statusCode}: ${data}`
               );
+              this.logError(`${method} ${path}`, { message: error.message });
+              reject(error);
               return;
             }
             const parsedData = JSON.parse(data);
+            this.logOperation(`${method} ${path} completed`, {
+              duration: `${duration}ms`,
+              statusCode: res.statusCode,
+            });
             resolve(parsedData);
           } catch (e) {
-            console.error('[OpenSearch] Failed to parse response:', e);
-            reject(new Error(`Failed to parse OpenSearch response: ${e}`));
+            const error = new Error(
+              `Failed to parse OpenSearch response: ${e}`
+            );
+            this.logError(`${method} ${path}`, { message: error.message });
+            reject(error);
           }
         });
       });
       req.setTimeout(30000, () => {
         req.destroy();
-        reject(new Error('Request timeout'));
+        const error = new Error('Request timeout');
+        this.logError(`${method} ${path}`, { message: error.message });
+        reject(error);
       });
       req.on('error', (e) => {
-        console.error('[OpenSearch] Network error:', {
-          message: e.message,
-          stack: e.stack,
-        });
-        reject(new Error(`OpenSearch request failed: ${e.message}`));
+        const error = new Error(`OpenSearch request failed: ${e.message}`);
+        this.logError(`${method} ${path}`, { message: error.message });
+        reject(error);
       });
       if (body) {
         req.write(JSON.stringify(body));
@@ -303,85 +317,97 @@ export class OpenSearchClient {
     }
   }
   async createILMPolicy() {
-    return this.request({
-      path: '/_plugins/_ism/policies/logs_policy',
-      method: 'PUT',
-      body: {
-        policy: {
-          description: 'Hot-Warm-Cold-Delete workflow for logs',
-          default_state: 'hot',
-          states: [
-            {
-              name: 'hot',
-              actions: [
-                {
-                  rollover: {
-                    min_doc_count: 5000000,
-                    min_size: '50gb',
-                    min_index_age: '1d',
+    try {
+      return await this.request({
+        path: '/_plugins/_ism/policies/logs_policy',
+        method: 'PUT',
+        body: {
+          policy: {
+            description: 'Hot-Warm-Cold-Delete workflow for logs',
+            default_state: 'hot',
+            states: [
+              {
+                name: 'hot',
+                actions: [
+                  {
+                    rollover: {
+                      min_doc_count: 5000000,
+                      min_size: '50gb',
+                      min_index_age: '1d',
+                    },
                   },
-                },
-              ],
-              transitions: [
-                {
-                  state_name: 'warm',
-                  conditions: {
-                    min_index_age: '2d',
+                ],
+                transitions: [
+                  {
+                    state_name: 'warm',
+                    conditions: {
+                      min_index_age: '2d',
+                    },
                   },
-                },
-              ],
-            },
-            {
-              name: 'warm',
-              actions: [
-                {
-                  replica_count: {
-                    number_of_replicas: 0,
+                ],
+              },
+              {
+                name: 'warm',
+                actions: [
+                  {
+                    replica_count: {
+                      number_of_replicas: 0,
+                    },
                   },
-                },
-                {
-                  force_merge: {
-                    max_num_segments: 1,
+                  {
+                    force_merge: {
+                      max_num_segments: 1,
+                    },
                   },
-                },
-              ],
-              transitions: [
-                {
-                  state_name: 'cold',
-                  conditions: {
-                    min_index_age: '7d',
+                ],
+                transitions: [
+                  {
+                    state_name: 'cold',
+                    conditions: {
+                      min_index_age: '7d',
+                    },
                   },
-                },
-              ],
-            },
-            {
-              name: 'cold',
-              actions: [
-                {
-                  read_only: {},
-                },
-              ],
-              transitions: [
-                {
-                  state_name: 'delete',
-                  conditions: {
-                    min_index_age: '30d',
+                ],
+              },
+              {
+                name: 'cold',
+                actions: [
+                  {
+                    read_only: {},
                   },
-                },
-              ],
-            },
-            {
-              name: 'delete',
-              actions: [
-                {
-                  delete: {},
-                },
-              ],
-            },
-          ],
+                ],
+                transitions: [
+                  {
+                    state_name: 'delete',
+                    conditions: {
+                      min_index_age: '30d',
+                    },
+                  },
+                ],
+              },
+              {
+                name: 'delete',
+                actions: [
+                  {
+                    delete: {},
+                  },
+                ],
+              },
+            ],
+          },
         },
-      },
-    });
+      });
+    } catch (error) {
+      // 정책이 이미 존재하는 경우 성공으로 처리
+      if (
+        error instanceof Error &&
+        error.message.includes('version_conflict_engine_exception')
+      ) {
+        this.logOperation('ILM policy already exists');
+        return { acknowledged: true };
+      }
+      throw error;
+    }
   }
   async getIndices(pattern) {
     return this.request({
@@ -399,6 +425,30 @@ export class OpenSearchClient {
     return this.request({
       path: `/${pattern}`,
       method: 'DELETE',
+    });
+  }
+  async getClusterHealth() {
+    return this.request({
+      path: '/_cluster/health',
+      method: 'GET',
+    });
+  }
+  async getClusterStats() {
+    return this.request({
+      path: '/_cluster/stats',
+      method: 'GET',
+    });
+  }
+  async getIndicesStats(pattern) {
+    return this.request({
+      path: `/_cat/indices/${pattern || '*'}?format=json&v=true`,
+      method: 'GET',
+    });
+  }
+  async getShardStats() {
+    return this.request({
+      path: '/_cat/shards?format=json&v=true',
+      method: 'GET',
     });
   }
 }
