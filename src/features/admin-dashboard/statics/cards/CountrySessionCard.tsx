@@ -64,7 +64,7 @@ export const CountrySessionCard: React.FC<CountrySessionCardProps> = ({
             {subtitle}
           </Text>
         </Box>
-        <Box flex="1" overflowY="auto" maxH="120px">
+        <Box flex="1" overflowY="auto" height="120px">
           <VStack gap={0} align="stretch">
             {data.map((country, index) => (
               <Flex
