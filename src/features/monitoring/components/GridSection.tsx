@@ -1,4 +1,4 @@
-import { memo, useCallback, useRef } from 'react';
+import { memo, useCallback, useEffect, useRef } from 'react';
 
 import { Box } from '@chakra-ui/react';
 import {
@@ -41,6 +41,24 @@ export const GridSection = memo(
         params.api.autoSizeColumns(allColumnIds);
       }, 100);
     }, []);
+
+    // 데이터가 없는 컬럼 숨기기
+    useEffect(() => {
+      if (!isLoading && gridRef.current?.api) {
+        const api = gridRef.current.api;
+        const columns = api.getAllGridColumns();
+
+        columns.forEach((column) => {
+          const field = column.getColId();
+          const hasData = data.some(
+            (row) => row && row[field] !== undefined && row[field] !== null
+          );
+
+          // 모든 컬럼에 대해 데이터 유무에 따라 표시 여부 결정
+          api.setColumnVisible(field, hasData);
+        });
+      }
+    }, [data, isLoading]);
 
     return (
       <Box

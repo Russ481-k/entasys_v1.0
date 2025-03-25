@@ -29,6 +29,7 @@ const createColumn = (
     suppressSizeToFit: false,
     autoHeaderHeight: false,
     wrapText: false,
+    hide: false,
     cellStyle: {
       fontSize: '12px',
       padding: '2px 8px',
@@ -63,7 +64,8 @@ const createColumn = (
   if (columnName.toLowerCase().includes('time')) {
     column.valueFormatter = timeFormatter;
     column.flex = 0;
-    column.minWidth = 160; // 날짜 표시를 위한 충분한 너비 확보
+    column.minWidth = 160;
+    column.hide = false;
 
     // 로딩 상태에 따른 셀 렌더러 설정
     column.cellRenderer = (params: ICellRendererParams<zLogs>) => {
@@ -82,6 +84,7 @@ const createColumn = (
   if (columnName.toLowerCase() === 'domain') {
     column.flex = 0;
     column.width = 180;
+    column.hide = false;
     column.valueFormatter = (params) => {
       if (typeof params.value === 'string') {
         return params.value.replace(
