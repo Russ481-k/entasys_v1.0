@@ -86,7 +86,7 @@ services:
       - 'indices.breaker.total.limit=95%'
       - 'indices.breaker.fielddata.limit=40%'
       - 'indices.breaker.request.limit=60%'
-      - 'indices.breaker.total.use-real-memory=false'
+      - 'indices.breaker.total.use_real_memory=false'
     volumes:
       - opensearch-data:/usr/share/opensearch/data
       - ./certs:/usr/share/opensearch/config/certs
