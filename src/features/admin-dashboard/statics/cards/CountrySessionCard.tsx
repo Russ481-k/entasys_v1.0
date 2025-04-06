@@ -26,7 +26,6 @@ export const CountrySessionCard: React.FC<CountrySessionCardProps> = ({
   title,
   subtitle,
   data,
-  isLoading,
 }) => {
   const { colorMode } = useColorMode();
 

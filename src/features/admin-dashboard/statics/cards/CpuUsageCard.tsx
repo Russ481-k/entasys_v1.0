@@ -24,7 +24,6 @@ export const CpuUsageCard: React.FC<CpuUsageCardProps> = ({
   title,
   subtitle,
   data,
-  isLoading,
 }) => {
   const { colorMode } = useColorMode();
 

@@ -23,7 +23,6 @@ export const LogsCountCard: React.FC<LogsCountCardProps> = ({
   title,
   subtitle,
   data,
-  isLoading,
 }) => {
   const { colorMode } = useColorMode();
 

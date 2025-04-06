@@ -349,113 +349,212 @@ export const dashboardRouter = createTRPCRouter({
         logs_per_day: logsPerDay.reduce((a, b) => a + b, 0),
       };
     }),
-  getChartMetrics: protectedProcedure().query(async () => {
-    var _a, _b, _c, _d, _e, _f, _g;
+  getSourceCountrySessions: protectedProcedure().query(async () => {
+    var _a, _b;
     const now = dayjs().tz('Asia/Seoul');
-    // 활성화된 도메인 목록 조회
-    const activeDomains = await prisma.domain.findMany({
-      where: { isActive: true },
-      select: { name: true },
-    });
-    const domainNames = activeDomains.map((domain) => domain.name);
-    try {
-      // 시간별 데이터 (최근 24시간)
-      const hourlyResult = await makeOpenSearchRequest('/_search', 'POST', {
+    const todayIndexPattern = now.format('YYYY.MM.DD');
+    const sourceCountrySessions = await makeOpenSearchRequest(
+      `/${todayIndexPattern}*/_search`,
+      'POST',
+      {
         size: 0,
         query: {
-          range: {
-            '@timestamp': {
-              gte: now.subtract(24, 'hours').format(),
-              lte: now.format(),
-              time_zone: '+09:00',
-            },
-          },
+          match_all: {},
         },
         aggs: {
-          logs_per_hour: {
-            date_histogram: {
-              field: '@timestamp',
-              fixed_interval: '1h',
-              time_zone: '+09:00',
-              format: 'yyyy-MM-dd HH:mm:ss',
-              extended_bounds: {
-                min: now.subtract(24, 'hours').valueOf(),
-                max: now.valueOf(),
-              },
-              min_doc_count: 0,
+          source_country: {
+            terms: {
+              field: 'sourceCountry.keyword',
+              order: { _count: 'desc' },
+              size: 1000,
             },
           },
         },
-      }).catch((error) => {
-        console.error('Error fetching hourly data:', error);
-        return { aggregations: { logs_per_hour: { buckets: [] } } };
-      });
-      // 일별 데이터 (최근 10일)
-      const dailyResult = await makeOpenSearchRequest('/_search', 'POST', {
+      }
+    );
+    return {
+      source_country_sessions:
+        ((_b =
+          (_a = sourceCountrySessions.aggregations) === null || _a === void 0
+            ? void 0
+            : _a.source_country) === null || _b === void 0
+          ? void 0
+          : _b.buckets
+              .filter((bucket) => /^[^0-9]/.test(bucket.key))
+              .slice(0, 10)
+              .map((bucket) => ({
+                country: bucket.key,
+                count: bucket.doc_count,
+              }))) || [],
+    };
+  }),
+  getDestinationCountrySessions: protectedProcedure().query(async () => {
+    var _a, _b;
+    const now = dayjs().tz('Asia/Seoul');
+    const todayIndexPattern = now.format('YYYY.MM.DD');
+    const destinationCountrySessions = await makeOpenSearchRequest(
+      `/${todayIndexPattern}*/_search`,
+      'POST',
+      {
         size: 0,
         query: {
-          range: {
-            '@timestamp': {
-              gte: 'now-10d/d',
-              lte: 'now/d',
-              time_zone: '+09:00',
-            },
-          },
+          match_all: {},
         },
         aggs: {
-          logs_per_day: {
-            date_histogram: {
-              field: '@timestamp',
-              calendar_interval: 'day',
-              time_zone: '+09:00',
-              format: 'yyyy-MM-dd',
-              extended_bounds: {
-                min: 'now-10d/d',
-                max: 'now/d',
+          destination_country: {
+            terms: {
+              field: 'destinationCountry.keyword',
+              order: { _count: 'desc' },
+              size: 1000,
+            },
+          },
+        },
+      }
+    );
+    return {
+      destination_country_sessions:
+        ((_b =
+          (_a = destinationCountrySessions.aggregations) === null ||
+          _a === void 0
+            ? void 0
+            : _a.destination_country) === null || _b === void 0
+          ? void 0
+          : _b.buckets
+              .filter((bucket) => /^[^0-9]/.test(bucket.key))
+              .slice(0, 10)
+              .map((bucket) => ({
+                country: bucket.key,
+                count: bucket.doc_count,
+              }))) || [],
+    };
+  }),
+  getDailyLogTotals: protectedProcedure()
+    .output(
+      z.object({
+        hourly_totals: z.array(
+          z.object({ time: z.string(), total: z.number() })
+        ),
+      })
+    )
+    .query(async () => {
+      var _a;
+      const now = dayjs().tz('Asia/Seoul');
+      const response = await makeOpenSearchRequest(
+        `/${now.format('YYYY.MM.DD')}*/_search`,
+        'POST',
+        {
+          size: 0,
+          query: {
+            range: {
+              '@timestamp': {
+                gte: now.subtract(24, 'hours').format(),
+                lte: now.format(),
+                time_zone: '+09:00',
               },
-              min_doc_count: 0,
             },
           },
-        },
-      }).catch((error) => {
-        console.error('Error fetching daily data:', error);
-        return { aggregations: { logs_per_day: { buckets: [] } } };
-      });
-      // 월별 데이터 (최근 12개월)
-      const monthlyResult = await makeOpenSearchRequest('/_search', 'POST', {
-        size: 0,
-        query: {
-          range: {
-            '@timestamp': {
-              gte: 'now-1y/M',
-              lte: 'now/M',
-              time_zone: '+09:00',
-            },
-          },
-        },
-        aggs: {
-          logs_per_month: {
-            date_histogram: {
-              field: '@timestamp',
-              calendar_interval: 'month',
-              time_zone: '+09:00',
-              format: 'yyyy-MM',
-              extended_bounds: {
-                min: 'now-1y/M',
-                max: 'now/M',
+          aggs: {
+            logs_per_hour: {
+              date_histogram: {
+                field: '@timestamp',
+                fixed_interval: '1h',
+                time_zone: '+09:00',
+                format: 'yyyy-MM-dd HH:mm:ss',
+                extended_bounds: {
+                  min: now.subtract(24, 'hours').valueOf(),
+                  max: now.valueOf(),
+                },
+                min_doc_count: 0,
               },
-              min_doc_count: 0,
             },
           },
-        },
-      }).catch((error) => {
-        console.error('Error fetching monthly data:', error);
-        return { aggregations: { logs_per_month: { buckets: [] } } };
+        }
+      );
+      return {
+        hourly_totals:
+          ((_a = response.aggregations.logs_per_hour) === null || _a === void 0
+            ? void 0
+            : _a.buckets.map((bucket) => ({
+                time: bucket.key_as_string,
+                total: bucket.doc_count,
+              }))) || [],
+      };
+    }),
+  getLast10DaysLogTotals: protectedProcedure()
+    .output(
+      z.object({
+        last_10_days_daily_totals: z.array(
+          z.object({ time: z.string(), total: z.number() })
+        ),
+      })
+    )
+    .query(async () => {
+      var _a;
+      const now = dayjs().tz('Asia/Seoul');
+      const response = await makeOpenSearchRequest(
+        `/${now.format('YYYY.MM')}*/_search`,
+        'POST',
+        {
+          size: 0,
+          query: {
+            range: {
+              '@timestamp': {
+                gte: 'now-10d/d',
+                lte: 'now/d',
+                time_zone: '+09:00',
+              },
+            },
+          },
+          aggs: {
+            logs_per_day: {
+              date_histogram: {
+                field: '@timestamp',
+                calendar_interval: 'day',
+                time_zone: '+09:00',
+                format: 'yyyy-MM-dd',
+                extended_bounds: {
+                  min: 'now-10d/d',
+                  max: 'now/d',
+                },
+                min_doc_count: 0,
+              },
+            },
+          },
+        }
+      );
+      return {
+        last_10_days_daily_totals:
+          ((_a = response.aggregations.logs_per_day) === null || _a === void 0
+            ? void 0
+            : _a.buckets.map((bucket) => ({
+                time: bucket.key_as_string,
+                total: bucket.doc_count,
+              }))) || [],
+      };
+    }),
+  getDeviceMonthlyLogTotals: protectedProcedure()
+    .output(
+      z.object({
+        monthly_totals: z.array(
+          z.object({ time: z.string(), total: z.number() })
+        ),
+        domain_monthly_totals: z.array(
+          z.object({
+            domain: z.string(),
+            data: z.array(z.object({ time: z.string(), total: z.number() })),
+          })
+        ),
+      })
+    )
+    .query(async () => {
+      const now = dayjs().tz('Asia/Seoul');
+      const activeDomains = await prisma.domain.findMany({
+        where: { isActive: true },
+        select: { name: true },
       });
-      // 도메인별 월간 데이터 (최근 12개월)
+      const domainNames = activeDomains.map((domain) => domain.name);
       const domainMonthlyPromises = domainNames.map(async (domain) => {
         try {
-          // 최근 12개월의 데이터를 가져오기
           const monthlyPromises = Array.from({ length: 12 }, async (_, i) => {
             var _a;
             try {
@@ -497,114 +596,29 @@ export const dashboardRouter = createTRPCRouter({
         }
       });
       const domainMonthlyResults = await Promise.all(domainMonthlyPromises);
-      const sourceCountrySessions = await makeOpenSearchRequest(
-        '/_search',
-        'POST',
-        {
-          size: 0,
-          query: {
-            match_all: {}, // 모든 문서 매칭
-          },
-          aggs: {
-            source_country: {
-              terms: {
-                field: 'sourceCountry.keyword',
-                order: { _count: 'desc' },
-                size: 1000,
-              },
-            },
-          },
-        }
-      );
-      const destinationCountrySessions = await makeOpenSearchRequest(
-        '/_search',
-        'POST',
-        {
-          size: 0,
-          query: {
-            match_all: {}, // 모든 문서 매칭
-          },
-          aggs: {
-            destination_country: {
-              terms: {
-                field: 'destinationCountry.keyword',
-                order: { _count: 'desc' },
-                size: 1000,
-              },
-            },
-          },
-        }
-      );
+      // 월간 총 수집량 계산
+      const monthlyTotals = Array.from({ length: 12 }, (_, i) => {
+        const month = now.subtract(11 - i, 'months').format('YYYY-MM');
+        const total = domainMonthlyResults.reduce((sum, domainData) => {
+          var _a;
+          const monthData = domainData.data.find((m) => m.time === month);
+          return (
+            sum +
+            ((_a =
+              monthData === null || monthData === void 0
+                ? void 0
+                : monthData.total) !== null && _a !== void 0
+              ? _a
+              : 0)
+          );
+        }, 0);
+        return { time: month, total };
+      });
       return {
-        hourly_totals:
-          ((_a = hourlyResult.aggregations.logs_per_hour) === null ||
-          _a === void 0
-            ? void 0
-            : _a.buckets.map((bucket) => ({
-                time: bucket.key_as_string,
-                total: bucket.doc_count,
-              }))) || [],
-        last_10_days_daily_totals:
-          ((_b = dailyResult.aggregations.logs_per_day) === null ||
-          _b === void 0
-            ? void 0
-            : _b.buckets.map((bucket) => ({
-                time: bucket.key_as_string,
-                total: bucket.doc_count,
-              }))) || [],
-        monthly_totals:
-          ((_c = monthlyResult.aggregations.logs_per_month) === null ||
-          _c === void 0
-            ? void 0
-            : _c.buckets.map((bucket) => ({
-                time: bucket.key_as_string,
-                total: bucket.doc_count,
-              }))) || [],
+        monthly_totals: monthlyTotals,
         domain_monthly_totals: domainMonthlyResults,
-        source_country_sessions:
-          ((_e =
-            (_d = sourceCountrySessions.aggregations) === null || _d === void 0
-              ? void 0
-              : _d.source_country) === null || _e === void 0
-            ? void 0
-            : _e.buckets
-                .filter((bucket) => /^[^0-9]/.test(bucket.key))
-                .slice(0, 10)
-                .map((bucket) => ({
-                  country: bucket.key,
-                  count: bucket.doc_count,
-                }))) || [],
-        destination_country_sessions:
-          ((_g =
-            (_f = destinationCountrySessions.aggregations) === null ||
-            _f === void 0
-              ? void 0
-              : _f.destination_country) === null || _g === void 0
-            ? void 0
-            : _g.buckets
-                .filter((bucket) => /^[^0-9]/.test(bucket.key))
-                .slice(0, 10)
-                .map((bucket) => ({
-                  country: bucket.key,
-                  count: bucket.doc_count,
-                }))) || [],
       };
-    } catch (error) {
-      console.error('Error in getChartMetrics:', error);
-      return {
-        hourly_totals: [],
-        last_10_days_daily_totals: [],
-        monthly_totals: [],
-        domain_monthly_totals: domainNames.map((domain) => ({
-          domain,
-          data: Array.from({ length: 12 }, (_, i) => ({
-            time: now.subtract(11 - i, 'months').format('YYYY-MM'),
-            total: 0,
-          })),
-        })),
-      };
-    }
-  }),
+    }),
 });
 export async function GET() {
   const totalMemory = os.totalmem();

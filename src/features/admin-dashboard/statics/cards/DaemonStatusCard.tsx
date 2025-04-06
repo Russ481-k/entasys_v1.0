@@ -7,7 +7,6 @@ import 'ag-grid-community/styles/ag-theme-quartz.css';
 
 export const DaemonStatusCard = ({
   daemonStatus,
-  isLoading,
 }: {
   daemonStatus: { dbms: 'active' | 'inactive'; parser: 'active' | 'inactive' };
   isLoading: boolean;
