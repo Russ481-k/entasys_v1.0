@@ -17,12 +17,14 @@ interface CpuUsageCardProps {
     value: number;
     unit: string;
   }[];
+  isLoading: boolean;
 }
 
 export const CpuUsageCard: React.FC<CpuUsageCardProps> = ({
   title,
   subtitle,
   data,
+  isLoading,
 }) => {
   const { colorMode } = useColorMode();
 

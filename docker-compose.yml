@@ -83,6 +83,10 @@ services:
       - 'thread_pool.write.size=8'
       - 'action.auto_create_index=true'
       - 'action.destructive_requires_name=true'
+      - 'indices.breaker.total.limit=95%'
+      - 'indices.breaker.fielddata.limit=40%'
+      - 'indices.breaker.request.limit=60%'
+      - 'indices.breaker.total.use-real-memory=false'
     volumes:
       - opensearch-data:/usr/share/opensearch/data
       - ./certs:/usr/share/opensearch/config/certs

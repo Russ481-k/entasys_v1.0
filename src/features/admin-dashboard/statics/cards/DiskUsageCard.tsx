@@ -21,8 +21,10 @@ import { AgChartsThemeChanged } from '@/components/AgChartsThemeChanged';
 
 export const DiskUsageCard = ({
   diskUsage,
+  isLoading,
 }: {
   diskUsage: { total: number; used: number; usage: number };
+  isLoading: boolean;
 }) => {
   const { colorMode } = useColorMode();
   const cpuUsageDataDonut = useMemo<AgChartOptions>(

@@ -15,52 +15,40 @@ import { DashboardStaticsCountsPerMonth } from './statics/charts/DashboardStatic
 import { DashboardStaticsCountsPerMonthByDomain } from './statics/charts/DashboardStaticsCountsPerMonthByDomain';
 
 export const DashboardStatics = () => {
-  const getChartMetrics = trpc.dashboard.getChartMetrics.useQuery();
-  const getSystemMetrics = trpc.dashboard.getSystemMetrics.useQuery();
-  const getLogMetrics = trpc.dashboard.getLogMetrics.useQuery();
-  const cpuUsage = getSystemMetrics.data?.cpu_usage;
-  const memoryUsage = getSystemMetrics.data?.memory_usage;
-  const diskUsage = getSystemMetrics.data?.disk;
-  const daemonStatus = getSystemMetrics.data?.daemon_status;
+  // 시스템 메트릭스
+  const { data: systemMetrics, isLoading: isSystemMetricsLoading } =
+    trpc.dashboard.getSystemMetrics.useQuery();
+  const cpuUsage = systemMetrics?.cpu_usage;
+  const memoryUsage = systemMetrics?.memory_usage;
+  const diskUsage = systemMetrics?.disk;
+  const daemonStatus = systemMetrics?.daemon_status;
 
-  const logsPerSecond = getLogMetrics.data?.logs_per_second;
-  const logsPerDay = getLogMetrics.data?.logs_per_day;
+  // 로그 메트릭스
+  const { data: logMetrics, isLoading: isLogMetricsLoading } =
+    trpc.dashboard.getLogMetrics.useQuery();
+  const logsPerSecond = logMetrics?.logs_per_second;
+  const logsPerDay = logMetrics?.logs_per_day;
 
-  // 국가별 세션 데이터 (예시 데이터, 실제 API 응답에 맞게 수정 필요)
-  const sourceCountrySessions =
-    getChartMetrics.data?.source_country_sessions ?? [];
-  const destinationCountrySessions =
-    getChartMetrics.data?.destination_country_sessions ?? [];
+  // 출발지/도착지 국가 세션
+  const { data: sourceCountrySessions, isLoading: isSourceCountryLoading } =
+    trpc.dashboard.getSourceCountrySessions.useQuery();
+  const {
+    data: destinationCountrySessions,
+    isLoading: isDestinationCountryLoading,
+  } = trpc.dashboard.getDestinationCountrySessions.useQuery();
 
-  // const encryptedCopyright = useMemo(() => {
-  //   const text = [
-  //     67, 111, 112, 121, 114, 105, 103, 104, 116, 32, 50, 48, 50, 53, 46, 32,
-  //     89, 117, 110, 32, 83, 117, 45, 66, 105, 110, 32, 97, 108, 108, 32, 114,
-  //     105, 103, 104, 116, 115, 32, 114, 101, 115, 101, 114, 118, 101, 100, 46,
-  //   ];
-  //   const key = [19, 28, 37, 46, 55, 64, 73, 82, 91];
-  //   return (
-  //     text
-  //       // @ts-expect-error don't want to implement
-  //       .map((char, i) => String.fromCharCode(char ^ key[i % key.length]))
-  //       .join('')
-  //   );
-  // }, []);
+  // 일간/월간 로그 총 수집량
+  const { data: dailyLogTotals } = trpc.dashboard.getDailyLogTotals.useQuery();
+  const { data: last10DaysLogTotals } =
+    trpc.dashboard.getLast10DaysLogTotals.useQuery();
+  const hourlyLogTotals = dailyLogTotals?.hourly_totals ?? [];
+  const last10DaysData = last10DaysLogTotals?.last_10_days_daily_totals ?? [];
 
-  // const warning = useMemo(() => {
-  //   if (!encryptedCopyright) return '';
-  //   const text = encryptedCopyright
-  //     ?.split('')
-  //     .map((char) => char.charCodeAt(0));
-  //   const key = [19, 28, 37, 46, 55, 64, 73, 82, 91];
-  //   if (!text) return '';
-  //   return (
-  //     text
-  //       // @ts-expect-error don't want to implement
-  //       .map((char, i) => String.fromCharCode(char ^ key[i % key.length]))
-  //       .join('')
-  //   );
-  // }, [encryptedCopyright]);
+  // 장비별 월간 로그 총 수집량
+  const { data: deviceMonthlyLogTotals } =
+    trpc.dashboard.getDeviceMonthlyLogTotals.useQuery();
+  const deviceMonthlyData = deviceMonthlyLogTotals?.domain_monthly_totals ?? [];
+  const monthlyData = deviceMonthlyLogTotals?.monthly_totals ?? [];
 
   return (
     <Grid
@@ -88,6 +76,7 @@ export const DashboardStatics = () => {
             count: logsPerDay || 0,
           },
         ]}
+        isLoading={isLogMetricsLoading}
       />
       <CpuUsageCard
         title="하드웨어 사용량"
@@ -104,38 +93,34 @@ export const DashboardStatics = () => {
             unit: '%',
           },
         ]}
+        isLoading={isSystemMetricsLoading}
       />
-      <DiskUsageCard diskUsage={diskUsage || { total: 0, used: 0, usage: 0 }} />
+      <DiskUsageCard
+        diskUsage={diskUsage || { total: 0, used: 0, usage: 0 }}
+        isLoading={isSystemMetricsLoading}
+      />
       <CountrySessionCard
         title="도착지 국가 세션"
         subtitle="Top 10 Destination Countries"
-        data={destinationCountrySessions}
+        data={destinationCountrySessions?.destination_country_sessions ?? []}
         type="destination"
+        isLoading={isDestinationCountryLoading}
       />
       <CountrySessionCard
         title="출발지 국가 세션"
         subtitle="Top 10 Source Countries"
-        data={sourceCountrySessions}
+        data={sourceCountrySessions?.source_country_sessions ?? []}
         type="source"
+        isLoading={isSourceCountryLoading}
       />
       <DaemonStatusCard
         daemonStatus={daemonStatus || { dbms: 'inactive', parser: 'inactive' }}
+        isLoading={isSystemMetricsLoading}
       />
-      <DashboardStaticsCountsPerDayHourse
-        data={getChartMetrics.data?.hourly_totals ?? []}
-      />
-      <DashboardStaticsCountsPer10Days
-        data={getChartMetrics.data?.last_10_days_daily_totals ?? []}
-      />
-      <DashboardStaticsCountsPerMonth
-        data={getChartMetrics.data?.monthly_totals ?? []}
-      />
-      <DashboardStaticsCountsPerMonthByDomain
-        data={getChartMetrics.data?.domain_monthly_totals ?? []}
-      />
-      {/* <Text fontSize="xs" gridColumn="1/-1" textAlign="center" color="gray.500">
-        {warning}
-      </Text> */}
+      <DashboardStaticsCountsPerDayHourse data={hourlyLogTotals} />
+      <DashboardStaticsCountsPer10Days data={last10DaysData} />
+      <DashboardStaticsCountsPerMonth data={monthlyData} />
+      <DashboardStaticsCountsPerMonthByDomain data={deviceMonthlyData} />
     </Grid>
   );
 };

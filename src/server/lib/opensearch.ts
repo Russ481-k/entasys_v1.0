@@ -508,14 +508,14 @@ export class OpenSearchClient {
       ...this.baseOptions,
       path,
       method,
-      timeout: 30000,
+      timeout: 60000,
     };
 
     return new Promise((resolve, reject) => {
       const req = http.request(options, (res) => {
         let data = '';
 
-        res.setTimeout(30000, () => {
+        res.setTimeout(60000, () => {
           req.destroy();
           const error = new Error('Response timeout');
           this.logError(`${method} ${path}`, { message: error.message });
@@ -553,7 +553,7 @@ export class OpenSearchClient {
         });
       });
 
-      req.setTimeout(30000, () => {
+      req.setTimeout(60000, () => {
         req.destroy();
         const error = new Error('Request timeout');
         this.logError(`${method} ${path}`, { message: error.message });

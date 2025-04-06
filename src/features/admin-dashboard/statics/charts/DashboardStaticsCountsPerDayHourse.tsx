@@ -7,18 +7,17 @@ import 'ag-grid-community/styles/ag-theme-quartz.css';
 
 import { AgChartsThemeChanged } from '@/components/AgChartsThemeChanged';
 
-export const DashboardStaticsCountsPerDayHourse = ({
-  data,
-}: {
+interface Props {
   data: { time: string; total: number }[];
-}) => {
+}
+
+export const DashboardStaticsCountsPerDayHourse = ({ data }: Props) => {
   const { colorMode } = useColorMode();
-  const [chartHeight, setChartHeight] = useState(0);
+  const [chartHeight, setChartHeight] = useState<number>(0);
 
   useEffect(() => {
     const updateHeight = () => {
-      const height = (window.innerHeight - 380) / 2;
-      setChartHeight(height);
+      setChartHeight((window.innerHeight - 380) / 2);
     };
 
     updateHeight();
@@ -29,7 +28,7 @@ export const DashboardStaticsCountsPerDayHourse = ({
   const countsPerDay = useMemo<AgChartOptions>(
     () => ({
       title: {
-        text: '일간 로그 총 수집량',
+        text: '일간 시간별 로그 총 수집량',
       },
       data: data,
       series: [
@@ -44,12 +43,6 @@ export const DashboardStaticsCountsPerDayHourse = ({
         {
           type: 'category',
           position: 'bottom',
-          label: {
-            formatter: (params) => {
-              const [date, time] = params.value.split(' ');
-              return `${date.slice(5)} ${time.slice(0, 5)}`;
-            },
-          },
         },
         {
           position: 'left',
@@ -67,14 +60,15 @@ export const DashboardStaticsCountsPerDayHourse = ({
         {
           position: 'right',
           type: 'number',
-          keys: ['countsPerHour'],
+          keys: ['countsPerMonth'],
           title: {
-            text: 'Counts Per Hour',
+            text: 'Counts Per Month',
           },
         },
       ],
       height: chartHeight,
-    }), // eslint-disable-next-line react-hooks/exhaustive-deps
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [data, colorMode, chartHeight]
   );
 

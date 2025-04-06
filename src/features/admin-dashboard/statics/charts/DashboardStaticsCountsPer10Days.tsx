@@ -7,18 +7,17 @@ import 'ag-grid-community/styles/ag-theme-quartz.css';
 
 import { AgChartsThemeChanged } from '@/components/AgChartsThemeChanged';
 
-export const DashboardStaticsCountsPer10Days = ({
-  data,
-}: {
+interface Props {
   data: { time: string; total: number }[];
-}) => {
+}
+
+export const DashboardStaticsCountsPer10Days = ({ data }: Props) => {
   const { colorMode } = useColorMode();
   const [chartHeight, setChartHeight] = useState<number>(0);
 
   useEffect(() => {
     const updateHeight = () => {
-      const height = (window.innerHeight - 380) / 2;
-      setChartHeight(height);
+      setChartHeight((window.innerHeight - 380) / 2);
     };
 
     updateHeight();
@@ -29,7 +28,7 @@ export const DashboardStaticsCountsPer10Days = ({
   const countsPerDay = useMemo<AgChartOptions>(
     () => ({
       title: {
-        text: '10일간 로그 총 수집량',
+        text: '최근 10일간 로그 총 수집량',
       },
       data: data,
       series: [
@@ -61,9 +60,9 @@ export const DashboardStaticsCountsPer10Days = ({
         {
           position: 'right',
           type: 'number',
-          keys: ['countsPer10Days'],
+          keys: ['countsPerMonth'],
           title: {
-            text: 'Counts Per 10 Days',
+            text: 'Counts Per Month',
           },
         },
       ],

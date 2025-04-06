@@ -7,11 +7,11 @@ import 'ag-grid-community/styles/ag-theme-quartz.css';
 
 import { AgChartsThemeChanged } from '@/components/AgChartsThemeChanged';
 
-export const DashboardStaticsCountsPerMonth = ({
-  data,
-}: {
+interface Props {
   data: { time: string; total: number }[];
-}) => {
+}
+
+export const DashboardStaticsCountsPerMonth = ({ data }: Props) => {
   const { colorMode } = useColorMode();
   const [chartHeight, setChartHeight] = useState<number>(0);
 

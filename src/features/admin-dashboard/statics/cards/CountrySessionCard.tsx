@@ -19,12 +19,14 @@ interface CountrySessionCardProps {
   subtitle: string;
   data: CountrySession[];
   type: 'source' | 'destination';
+  isLoading: boolean;
 }
 
 export const CountrySessionCard: React.FC<CountrySessionCardProps> = ({
   title,
   subtitle,
   data,
+  isLoading,
 }) => {
   const { colorMode } = useColorMode();
 

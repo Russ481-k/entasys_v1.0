@@ -16,12 +16,14 @@ interface LogsCountCardProps {
     label: string;
     count: number;
   }[];
+  isLoading: boolean;
 }
 
 export const LogsCountCard: React.FC<LogsCountCardProps> = ({
   title,
   subtitle,
   data,
+  isLoading,
 }) => {
   const { colorMode } = useColorMode();
 
