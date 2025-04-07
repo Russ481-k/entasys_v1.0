@@ -286,6 +286,7 @@ export class OpenSearchClient {
       method: 'PUT',
       body: {
         index_patterns: [`*_${domainName.toLowerCase()}_*`],
+        priority: 100,
         template: {
           settings: {
             number_of_shards: 1,
