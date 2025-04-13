@@ -66,4 +66,5 @@ certs/
 # Logs and backups
 log.txt
 logstash/pipeline/*.conf
+logstash/data/*
 *.backup

@@ -101,12 +101,41 @@ async function checkDaemonStatus(): Promise<{
       (_, stdout) => {
         const dbmsActive =
           stdout.trim() === `"healthy"` ? 'active' : 'inactive';
+
+        // Check Logstash Producer
         exec(
-          "docker inspect logstash | jq '.[0].State.Status'",
+          "docker inspect logstash-producer | jq '.[0].State.Status'",
           (_, stdout) => {
-            const parserActive =
+            const producerActive =
               stdout.trim() === `"running"` ? 'active' : 'inactive';
-            resolve({ dbms: dbmsActive, parser: parserActive });
+
+            // Check Logstash Consumer
+            exec(
+              "docker inspect logstash-consumer | jq '.[0].State.Status'",
+              (_, stdout) => {
+                const consumerActive =
+                  stdout.trim() === `"running"` ? 'active' : 'inactive';
+
+                // Check Kafka
+                exec(
+                  "docker inspect kafka | jq '.[0].State.Status'",
+                  (_, stdout) => {
+                    const kafkaActive =
+                      stdout.trim() === `"running"` ? 'active' : 'inactive';
+
+                    // If all parser components are active, mark parser as active
+                    const parserActive =
+                      producerActive === 'active' &&
+                      consumerActive === 'active' &&
+                      kafkaActive === 'active'
+                        ? 'active'
+                        : 'inactive';
+
+                    resolve({ dbms: dbmsActive, parser: parserActive });
+                  }
+                );
+              }
+            );
           }
         );
       }

@@ -1,0 +1,25 @@
+## JVM configuration
+
+# Xms represents the initial size of total heap space
+# Xmx represents the maximum size of total heap space
+
+-Xms4g
+-Xmx4g
+
+# Expert settings
+-XX:+UseG1GC
+-XX:G1ReservePercent=25
+-XX:InitiatingHeapOccupancyPercent=75
+
+# Locale settings
+-Dfile.encoding=UTF-8
+
+# Memory lock to prevent swapping
+-Dbootstrap.memory_lock=true
+
+# Set the timezone
+-Duser.timezone=Asia/Seoul
+
+# Heap dump settings
+-XX:+HeapDumpOnOutOfMemoryError
+-XX:HeapDumpPath=/var/log/logstash/ 

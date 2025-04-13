@@ -2,12 +2,8 @@ import fs from 'fs-extra';
 import inquirer from 'inquirer';
 import { execSync } from 'node:child_process';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { type PANOSVersion, VERSIONS } from '../src/config/versions.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 function resolvePath(relativePath: string) {
   return path.isAbsolute(relativePath)
@@ -86,29 +82,62 @@ async function setupVersion() {
 
   fs.writeJsonSync(versionConfigPath, { version }, { spaces: 2 });
 
-  const logstashSrc = resolvePath(
-    path.join('./logstash/pipeline', `logstash_${version}.conf`)
+  // Producer 설정 파일 복사
+  const producerSrc = resolvePath(
+    path.join('./logstash/pipeline/producer', `producer_${version}.conf`)
   );
-  const logstashDest = resolvePath(
-    path.join('./logstash/pipeline', 'logstash.conf')
+  const producerDest = resolvePath(
+    path.join('./logstash/pipeline/producer', 'producer.conf')
   );
 
-  if (fs.existsSync(logstashSrc)) {
+  if (fs.existsSync(producerSrc)) {
     // 백업 먼저 생성
-    if (fs.existsSync(logstashDest)) {
-      const backupPath = backupConfig(logstashDest);
+    if (fs.existsSync(producerDest)) {
+      const backupPath = backupConfig(producerDest);
       if (backupPath) {
         console.log(`Backup created at: ${backupPath}`);
       }
     }
 
-    fs.copyFileSync(logstashSrc, logstashDest);
-    console.log(`Logstash configuration copied from ${logstashSrc}`);
+    fs.copyFileSync(producerSrc, producerDest);
+    console.log(`Logstash producer configuration copied from ${producerSrc}`);
+  } else {
+    console.error(
+      `Logstash producer configuration file not found: ${producerSrc}`
+    );
+    throw new Error(
+      `Missing Logstash producer configuration for version ${version}`
+    );
+  }
+
+  // Consumer 설정 파일 복사
+  const consumerSrc = resolvePath(
+    path.join('./logstash/pipeline/consumer', `consumer_${version}.conf`)
+  );
+  const consumerDest = resolvePath(
+    path.join('./logstash/pipeline/consumer', 'consumer.conf')
+  );
+
+  if (fs.existsSync(consumerSrc)) {
+    // 백업 먼저 생성
+    if (fs.existsSync(consumerDest)) {
+      const backupPath = backupConfig(consumerDest);
+      if (backupPath) {
+        console.log(`Backup created at: ${backupPath}`);
+      }
+    }
+
+    fs.copyFileSync(consumerSrc, consumerDest);
+    console.log(`Logstash consumer configuration copied from ${consumerSrc}`);
 
     await checkAndRestartContainer('logstash');
   } else {
-    console.error(`Logstash configuration file not found: ${logstashSrc}`);
-    throw new Error(`Missing Logstash configuration for version ${version}`);
+    console.error(
+      `Logstash consumer configuration file not found: ${consumerSrc}`
+    );
+    throw new Error(
+      `Missing Logstash consumer configuration for version ${version}`
+    );
   }
 
   console.log(`Configuration updated for PAN-OS ${version}`);
