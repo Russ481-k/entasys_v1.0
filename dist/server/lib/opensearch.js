@@ -281,12 +281,19 @@ export class OpenSearchClient {
   }
   async updateIndexTemplate(domainName) {
     const templateName = `template_${domainName.toLowerCase()}`;
+    // Generate a unique priority based on domain name hash
+    const priority =
+      Math.abs(
+        domainName.split('').reduce((acc, char) => {
+          return acc + char.charCodeAt(0);
+        }, 0)
+      ) % 1000; // Ensure priority is between 0 and 999
     return this.request({
       path: `/_index_template/${templateName}`,
       method: 'PUT',
       body: {
         index_patterns: [`*_${domainName.toLowerCase()}_*`],
-        priority: 100,
+        priority,
         template: {
           settings: {
             number_of_shards: 1,
