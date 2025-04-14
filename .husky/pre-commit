@@ -1,4 +1,5 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
+export PATH="/home/vtek/.nvm/versions/node/v20.15.0/bin:$PATH"
 pnpm lint-staged

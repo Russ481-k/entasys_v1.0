@@ -1,4 +1,4 @@
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { emphasis, prisma } from 'prisma/seed/utils';
 
 import { VALIDATION_PASSWORD_MOCKED } from '@/features/auth/utils';

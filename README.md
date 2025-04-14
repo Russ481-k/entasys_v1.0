@@ -284,7 +284,6 @@
     # 변경된 설정 적용
     sudo sysctl -p
 ```
-
 ```
  sudo env PATH=$PATH:/usr/bin /home/vtek/.nvm/versions/node/v20.15.0/bin/pm2 startup systemd -u vtek --hp /home/vtek
  pm2 save

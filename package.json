@@ -7,7 +7,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "prepare": "husky",
+    "prepare": "husky && husky install",
     "preinstall": "npx only-allow pnpm",
     "postinstall": "prisma generate && pnpm build:info && pnpm theme:generate-typing",
     "dev": "run-p dev:*",
@@ -88,7 +88,7 @@
     "ag-grid-react": "^32.0.0",
     "archiver": "^7.0.1",
     "axios": "^1.7.8",
-    "bcrypt": "5.1.1",
+    "bcryptjs": "^3.0.2",
     "chakra-react-select": "4.7.6",
     "colorette": "2.0.20",
     "crypto-js": "^4.2.0",
@@ -173,7 +173,7 @@
     "eslint-config-next": "14.1.4",
     "eslint-plugin-sonarjs": "0.24.0",
     "eslint-plugin-storybook": "0.8.0",
-    "husky": "9.0.11",
+    "husky": "^8.0.0",
     "inquirer": "^12.3.0",
     "jsdom": "24.0.0",
     "lint-staged": "15.2.2",
@@ -213,7 +213,7 @@
     "ignoredBuiltDependencies": [
       "@prisma/client",
       "@prisma/engines",
-      "bcrypt",
+      "bcryptjs",
       "core-js",
       "core-js-pure",
       "esbuild",
