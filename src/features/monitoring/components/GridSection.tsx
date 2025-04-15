@@ -20,6 +20,7 @@ interface GridSectionProps {
   onCellClicked: (event: CellClickedEvent<zLogs>) => void;
   colorMode: 'light' | 'dark';
   timeFormatter: (params: ValueFormatterParams) => string;
+  isThreatLog?: boolean;
 }
 
 export const GridSection = memo(
@@ -29,6 +30,7 @@ export const GridSection = memo(
     onCellClicked,
     colorMode,
     timeFormatter,
+    isThreatLog = false,
   }: GridSectionProps) => {
     const gridRef = useRef<AgGridReact<zLogs>>(null);
 
@@ -44,17 +46,29 @@ export const GridSection = memo(
 
     // 데이터가 없는 컬럼 숨기기
     useEffect(() => {
-      if (!isLoading && gridRef.current?.api) {
+      if (gridRef.current?.api) {
         const api = gridRef.current.api;
         const columns = api.getAllGridColumns();
 
         columns.forEach((column) => {
           const field = column.getColId();
-          const hasData = data.some(
-            (row) => row && row[field] !== undefined && row[field] !== null
-          );
+          let hasData = false;
 
-          // 모든 컬럼에 대해 데이터 유무에 따라 표시 여부 결정
+          if (!isLoading && data) {
+            // 데이터가 있는 경우에만 체크
+            hasData = data.some(
+              (row) =>
+                row &&
+                row[field] !== undefined &&
+                row[field] !== null &&
+                row[field] !== '' && // 빈 문자열 체크
+                !(Array.isArray(row[field]) && row[field].length === 0) // 빈 배열 체크
+            );
+          } else if (isLoading) {
+            // 로딩 중일 때는 모든 컬럼 표시
+            hasData = true;
+          }
+
           api.setColumnVisible(field, hasData);
         });
       }
@@ -72,7 +86,13 @@ export const GridSection = memo(
         <AgGridReact
           ref={gridRef}
           rowData={!isLoading ? data : dummy}
-          columnDefs={colDefs(!isLoading, onCellClicked, timeFormatter)}
+          columnDefs={colDefs(
+            !isLoading,
+            onCellClicked,
+            timeFormatter,
+            '11.0',
+            isThreatLog
+          )}
           rowHeight={26}
           headerHeight={26}
           onGridReady={onGridReady}

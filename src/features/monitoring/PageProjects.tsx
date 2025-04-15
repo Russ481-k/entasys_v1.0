@@ -471,6 +471,7 @@ export default function PageProjects() {
             onCellClicked={onCellClicked}
             colorMode={colorMode}
             timeFormatter={timeFormatter}
+            isThreatLog={menu === 'THREAT'}
           />
           <ProjectsFooter
             isLoading={isDataLoading}

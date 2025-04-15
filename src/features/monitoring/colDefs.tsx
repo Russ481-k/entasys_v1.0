@@ -7,8 +7,10 @@ import {
   ValueFormatterParams,
 } from 'ag-grid-community';
 
+import { PANOSVersion } from '@/config/versions';
+
+import { getColumnNames, getThreatColumnNames } from './columns';
 import { zLogs } from './schemas';
-import { columnNames } from './versions/11.0/colNameList_11.0';
 
 // 컬럼 설정 함수
 const createColumn = (
@@ -122,8 +124,18 @@ const createColumn = (
 export const colDefs = (
   isLoading: boolean,
   onCellClickChanged: (event: CellClickedEvent<zLogs>) => void,
-  timeFormatter: (e: ValueFormatterParams<zLogs>) => string
-): ColDef<zLogs>[] =>
-  columnNames.map((columnName) =>
+  timeFormatter: (e: ValueFormatterParams<zLogs>) => string,
+  version: PANOSVersion = '11.0',
+  isThreatLog: boolean = false
+): ColDef<zLogs>[] => {
+  const columnNames = isThreatLog
+    ? getThreatColumnNames(version)
+    : getColumnNames(version);
+  if (!columnNames) {
+    console.error('Column names are undefined for version:', version);
+    return [];
+  }
+  return columnNames.map((columnName: string) =>
     createColumn(columnName, isLoading, onCellClickChanged, timeFormatter)
   );
+};
