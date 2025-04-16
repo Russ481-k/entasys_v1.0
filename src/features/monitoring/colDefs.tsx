@@ -25,7 +25,7 @@ const createColumn = (
       .replace(/([A-Z])/g, ' $1')
       .trim()
       .toUpperCase(),
-    minWidth: 120,
+    minWidth: 180,
     flex: 1,
     resizable: true,
     suppressSizeToFit: false,
