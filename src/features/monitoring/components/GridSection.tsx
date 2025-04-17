@@ -21,6 +21,7 @@ interface GridSectionProps {
   colorMode: 'light' | 'dark';
   timeFormatter: (params: ValueFormatterParams) => string;
   isThreatLog?: boolean;
+  isTrafficLog?: boolean;
 }
 
 export const GridSection = memo(
@@ -31,6 +32,7 @@ export const GridSection = memo(
     colorMode,
     timeFormatter,
     isThreatLog = false,
+    isTrafficLog = false,
   }: GridSectionProps) => {
     const gridRef = useRef<AgGridReact<zLogs>>(null);
 
@@ -91,7 +93,8 @@ export const GridSection = memo(
             onCellClicked,
             timeFormatter,
             '11.0',
-            isThreatLog
+            isThreatLog,
+            isTrafficLog
           )}
           rowHeight={26}
           headerHeight={26}

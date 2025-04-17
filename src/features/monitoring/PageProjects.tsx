@@ -472,6 +472,7 @@ export default function PageProjects() {
             colorMode={colorMode}
             timeFormatter={timeFormatter}
             isThreatLog={menu === 'THREAT'}
+            isTrafficLog={menu === 'TRAFFIC'}
           />
           <ProjectsFooter
             isLoading={isDataLoading}

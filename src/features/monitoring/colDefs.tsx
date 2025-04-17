@@ -9,7 +9,11 @@ import {
 
 import { PANOSVersion } from '@/config/versions';
 
-import { getColumnNames, getThreatColumnNames } from './columns';
+import {
+  getSystemColumnNames,
+  getThreatColumnNames,
+  getTrafficColumnNames,
+} from './columns';
 import { zLogs } from './schemas';
 
 // 컬럼 설정 함수
@@ -20,7 +24,7 @@ const createColumn = (
   timeFormatter: (e: ValueFormatterParams<zLogs>) => string
 ): ColDef<zLogs> => {
   const column: ColDef<zLogs> = {
-    field: columnName,
+    field: columnName as keyof zLogs,
     headerName: columnName
       .replace(/([A-Z])/g, ' $1')
       .trim()
@@ -126,11 +130,14 @@ export const colDefs = (
   onCellClickChanged: (event: CellClickedEvent<zLogs>) => void,
   timeFormatter: (e: ValueFormatterParams<zLogs>) => string,
   version: PANOSVersion = '11.0',
-  isThreatLog: boolean = false
+  isThreatLog: boolean = false,
+  isTrafficLog: boolean = false
 ): ColDef<zLogs>[] => {
   const columnNames = isThreatLog
     ? getThreatColumnNames(version)
-    : getColumnNames(version);
+    : isTrafficLog
+      ? getTrafficColumnNames(version)
+      : getSystemColumnNames(version);
   if (!columnNames) {
     console.error('Column names are undefined for version:', version);
     return [];
