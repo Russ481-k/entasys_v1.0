@@ -286,5 +286,8 @@
 ```
 ```
  sudo env PATH=$PATH:/usr/bin /home/vtek/.nvm/versions/node/v20.15.0/bin/pm2 startup systemd -u vtek --hp /home/vtek
- pm2 save
+ pm2 save 
 ```
+
+
+postgresql namd username password 변경할 것

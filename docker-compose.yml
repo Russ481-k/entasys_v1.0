@@ -1,3 +1,4 @@
+name: entasys-new
 services:
   postgres:
     image: postgres:16.1
@@ -11,47 +12,24 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '4'
-          memory: '8G'
+          cpus: '1'
+          memory: '1G'
         reservations:
-          cpus: '2'
-          memory: '4G'
+          cpus: '0.5'
+          memory: '512M'
     command:
       - 'postgres'
       - '-c'
-      - 'max_connections=1000'
+      - 'max_connections=100'
       - '-c'
-      - 'shared_buffers=2GB'
+      - 'shared_buffers=128MB'
       - '-c'
-      - 'effective_cache_size=6GB'
-      - '-c'
-      - 'maintenance_work_mem=512MB'
-      - '-c'
-      - 'work_mem=16MB'
-      - '-c'
-      - 'wal_buffers=16MB'
-      - '-c'
-      - 'random_page_cost=1.1'
-      - '-c'
-      - 'effective_io_concurrency=200'
-      - '-c'
-      - 'checkpoint_completion_target=0.9'
-      - '-c'
-      - 'synchronous_commit=off'
-      - '-c'
-      - 'max_wal_size=2GB'
-      - '-c'
-      - 'min_wal_size=1GB'
-      - '-c'
-      - 'autovacuum_max_workers=3'
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-      nofile:
-        soft: 65536
-        hard: 65536
-    shm_size: '2gb'
+      - 'effective_cache_size=256MB'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.0
@@ -59,10 +37,6 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
-    volumes:
-      - ./kafka/config/zookeeper.properties:/etc/kafka/zookeeper.properties
-      - zookeeper-data:/var/lib/zookeeper/data
-      - zookeeper-log:/var/lib/zookeeper/log
     networks:
       - palolog
 
@@ -81,9 +55,7 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-    volumes:
-      - ./kafka/config/server.properties:/etc/kafka/server.properties
-      - kafka-data:/var/lib/kafka/data
+      KAFKA_HEAP_OPTS: "-Xms256m -Xmx256m"
     networks:
       - palolog
 
@@ -100,30 +72,14 @@ services:
       - discovery.type=single-node
       - OPENSEARCH_INITIAL_ADMIN_PASSWORD=PaloLog2024!@#$
       - plugins.security.disabled=true
-      - 'OPENSEARCH_JAVA_OPTS=-Xms10g -Xmx10g'
+      - 'OPENSEARCH_JAVA_OPTS=-Xms768m -Xmx768m'
       - bootstrap.memory_lock=true
-      - TZ=Asia/Seoul
-      - 'cluster.routing.allocation.disk.threshold_enabled=true'
-      - 'cluster.routing.allocation.disk.watermark.low=85%'
-      - 'cluster.routing.allocation.disk.watermark.high=90%'
-      - 'cluster.routing.allocation.disk.watermark.flood_stage=95%'
-      - 'cluster.max_shards_per_node=3000'
-      - 'http.max_content_length=500mb'
-      - 'http.compression=true'
-      - 'search.max_open_scroll_context=2000'
-      - 'search.max_buckets=100000'
-      - 'search.default_search_timeout=30s'
-      - 'thread_pool.search.size=16'
-      - 'thread_pool.write.size=8'
-      - 'action.auto_create_index=true'
-      - 'action.destructive_requires_name=true'
-      - 'indices.breaker.total.limit=95%'
-      - 'indices.breaker.fielddata.limit=40%'
-      - 'indices.breaker.request.limit=60%'
-      - 'indices.breaker.total.use_real_memory=false'
-    volumes:
-      - opensearch-data:/usr/share/opensearch/data
-      - ./certs:/usr/share/opensearch/config/certs
+    deploy:
+      resources:
+        limits:
+          memory: '1.5G'
+        reservations:
+          memory: '1G'
     ulimits:
       memlock:
         soft: -1
@@ -132,116 +88,67 @@ services:
         soft: 65536
         hard: 65536
     healthcheck:
-      test:
-        [
-          'CMD-SHELL',
-          'curl -k -s http://localhost:9200/_cluster/health || exit 1',
-        ]
+      test: ["CMD-SHELL", "curl -k -s http://localhost:9200/_cluster/health || exit 1"]
       interval: 30s
       timeout: 30s
-      retries: 3
-      start_period: 40s
-    shm_size: '1gb'
+      retries: 5
+      start_period: 60s
 
   logstash-producer:
     image: opensearchproject/logstash-oss-with-opensearch-output-plugin:8.9.0
     restart: unless-stopped
     container_name: logstash-producer
+    depends_on:
+      kafka:
+        condition: service_started
+      opensearch:
+        condition: service_healthy
     networks:
       - palolog
     ports:
       - '514:514/udp'
     environment:
-      - 'LS_JAVA_OPTS=-Xms4g -Xmx4g'
-      - 'pipeline.batch.size=5000'
-      - 'pipeline.workers=3'
-      - 'pipeline.batch.delay=25'
-      - 'pipeline.io_threads=2'
-      - 'pipeline.ordered=false'
-      - 'pipeline.unsafe_shutdown=true'
-      - 'pipeline.ecs_compatibility=disabled'
-      - 'queue.type=memory'
-      - 'queue.max_bytes=1gb'
-      - 'queue.checkpoint.writes=5000'
-      - 'queue.checkpoint.acks=5000'
-      - 'queue.checkpoint.interval=1000'
-      - 'queue.page_capacity=125mb'
-      - 'queue.max_pages=4'
-      - 'queue.max_events=5000'
-      - 'queue.drain=true'
-      - 'TZ=Asia/Seoul'
+      - 'LS_JAVA_OPTS=-Xms256m -Xmx256m'
+      - 'pipeline.workers=2'
     deploy:
       resources:
         limits:
-          cpus: '4'
-          memory: '5G'
+          cpus: '1'
+          memory: '512M'
         reservations:
-          cpus: '2'
-          memory: '3G'
+          cpus: '0.25'
+          memory: '256M'
     volumes:
       - ./logstash/pipeline:/usr/share/logstash/pipeline
     command: logstash -f /usr/share/logstash/pipeline/producer/producer.conf --config.reload.automatic
     user: root
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-      nofile:
-        soft: 65536
-        hard: 65536
-      nproc:
-        soft: 65535
-        hard: 65535
-    shm_size: '2gb'
 
   logstash-consumer:
     image: opensearchproject/logstash-oss-with-opensearch-output-plugin:8.9.0
     restart: unless-stopped
     container_name: logstash-consumer
+    depends_on:
+      kafka:
+        condition: service_started
+      opensearch:
+        condition: service_healthy
     networks:
       - palolog
     environment:
-      - 'LS_JAVA_OPTS=-Xms4g -Xmx4g'
-      - 'pipeline.batch.size=5000'
-      - 'pipeline.workers=3'
-      - 'pipeline.batch.delay=25'
-      - 'pipeline.io_threads=2'
-      - 'pipeline.ordered=false'
-      - 'pipeline.unsafe_shutdown=true'
-      - 'pipeline.ecs_compatibility=disabled'
-      - 'queue.type=memory'
-      - 'queue.max_bytes=1gb'
-      - 'queue.checkpoint.writes=5000'
-      - 'queue.checkpoint.acks=5000'
-      - 'queue.checkpoint.interval=1000'
-      - 'queue.page_capacity=125mb'
-      - 'queue.max_pages=4'
-      - 'queue.max_events=5000'
-      - 'queue.drain=true'
-      - 'TZ=Asia/Seoul'
+      - 'LS_JAVA_OPTS=-Xms256m -Xmx256m'
+      - 'pipeline.workers=2'
     deploy:
       resources:
         limits:
-          cpus: '4'
-          memory: '5G'
+          cpus: '1'
+          memory: '512M'
         reservations:
-          cpus: '2'
-          memory: '3G'
+          cpus: '0.25'
+          memory: '256M'
     volumes:
       - ./logstash/pipeline:/usr/share/logstash/pipeline
     command: logstash -f /usr/share/logstash/pipeline/consumer/consumer.conf --config.reload.automatic
     user: root
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-      nofile:
-        soft: 65536
-        hard: 65536
-      nproc:
-        soft: 65535
-        hard: 65535
-    shm_size: '2gb'
 
 networks:
   palolog:
@@ -249,8 +156,6 @@ networks:
 
 volumes:
   opensearch-data:
-  logstash-data:
-  logstash-logs:
   zookeeper-data:
   zookeeper-log:
   kafka-data:

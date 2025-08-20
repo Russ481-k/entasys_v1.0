@@ -4,6 +4,7 @@ import { createHash } from 'crypto';
 import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone';
 import utc from 'dayjs/plugin/utc';
+import os from 'os';
 
 import { env } from '@/env.mjs';
 
@@ -18,19 +19,28 @@ async function generateSystemLicense() {
   try {
     // 하드웨어 정보 수집
     let hardwareInfo;
-    try {
+    const platform = os.platform();
+
+    if (platform === 'linux') {
       hardwareInfo = {
         cpu: execSync('cat /proc/cpuinfo').toString(),
         system: execSync('uname -a').toString(),
         network: execSync("ip link | awk '/ether/ {print $2}'").toString(),
       };
-    } catch (error) {
-      // Windows 환경 대응
+    } else if (platform === 'win32') {
       hardwareInfo = {
         cpu: execSync('wmic cpu get name').toString(),
         system: execSync('ver').toString(),
         network: execSync('getmac').toString(),
       };
+    } else if (platform === 'darwin') {
+      hardwareInfo = {
+        cpu: execSync('sysctl -n machdep.cpu.brand_string').toString(),
+        system: execSync('uname -a').toString(),
+        network: execSync("ifconfig en0 | awk '/ether/ {print $2}'").toString(),
+      };
+    } else {
+      throw new Error(`Unsupported platform: ${platform}`);
     }
 
     // 하드웨어 해시 생성

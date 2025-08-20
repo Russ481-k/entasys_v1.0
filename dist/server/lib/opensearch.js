@@ -281,6 +281,7 @@ export class OpenSearchClient {
   }
   async updateIndexTemplate(domainName) {
     const templateName = `template_${domainName.toLowerCase()}`;
+    const aliasName = `alias_${domainName.toLowerCase()}`;
     // Generate a unique priority based on domain name hash
     const priority =
       Math.abs(
@@ -288,11 +289,12 @@ export class OpenSearchClient {
           return acc + char.charCodeAt(0);
         }, 0)
       ) % 1000; // Ensure priority is between 0 and 999
-    return this.request({
+    // Create index template
+    const templateResult = await this.request({
       path: `/_index_template/${templateName}`,
       method: 'PUT',
       body: {
-        index_patterns: [`*_${domainName.toLowerCase()}_*`],
+        index_patterns: [`*_${domainName.toLowerCase()}`],
         priority,
         template: {
           settings: {
@@ -300,11 +302,33 @@ export class OpenSearchClient {
             number_of_replicas: 0,
             refresh_interval: '30s',
             'plugins.index_state_management.policy_id': 'logs_policy',
-            'plugins.index_state_management.rollover_alias': `alias_${domainName.toLowerCase()}`,
+            'plugins.index_state_management.rollover_alias': aliasName,
           },
         },
       },
     });
+    // Create initial index and alias for rollover
+    try {
+      const initialIndexName = `${new Date().toISOString().slice(0, 13).replace(/[-T]/g, '.').replace(':', '')}_${domainName.toLowerCase()}-000001`;
+      await this.request({
+        path: `/${initialIndexName}`,
+        method: 'PUT',
+        body: {
+          aliases: {
+            [aliasName]: {
+              is_write_index: true,
+            },
+          },
+        },
+      });
+      this.logOperation(
+        `Initial index and alias created: ${initialIndexName} -> ${aliasName}`
+      );
+    } catch (error) {
+      // Alias might already exist, which is fine
+      this.logOperation(`Alias ${aliasName} might already exist: ${error}`);
+    }
+    return templateResult;
   }
   async deleteIndexTemplate(domainName) {
     try {
@@ -339,9 +363,9 @@ export class OpenSearchClient {
                 actions: [
                   {
                     rollover: {
-                      min_doc_count: 5000000,
-                      min_size: '50gb',
-                      min_index_age: '1d',
+                      min_doc_count: 1000000, // 100만 문서로 감소
+                      min_size: '5gb', // 5GB로 감소
+                      min_index_age: '12h', // 12시간으로 감소
                     },
                   },
                 ],
@@ -349,7 +373,7 @@ export class OpenSearchClient {
                   {
                     state_name: 'warm',
                     conditions: {
-                      min_index_age: '2d',
+                      min_index_age: '1d', // 1일로 감소
                     },
                   },
                 ],
@@ -372,7 +396,7 @@ export class OpenSearchClient {
                   {
                     state_name: 'cold',
                     conditions: {
-                      min_index_age: '7d',
+                      min_index_age: '3d', // 3일로 감소
                     },
                   },
                 ],
@@ -388,7 +412,7 @@ export class OpenSearchClient {
                   {
                     state_name: 'delete',
                     conditions: {
-                      min_index_age: '30d',
+                      min_index_age: '7d', // 7일로 감소
                     },
                   },
                 ],

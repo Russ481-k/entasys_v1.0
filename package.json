@@ -22,9 +22,9 @@
     "start:ws": "NODE_ENV=production dotenv -e .env -- tsx dist/server/index.js",
     "prod:clean": "pm2 delete all || true && sudo lsof -i :8000 || true && sudo kill -9 $(sudo lsof -t -i:8000) || true",
     "prod:dk": "docker stop $(docker ps -aq) || true && docker rm $(docker ps -aq) || true && pnpm dk:init && pnpm generate:license",
-    "prod:permissions": "sudo chown -R vtek:vtek ./.next && sudo chmod -R 755 ./.next",
+    "prod:permissions": "if [ \"$(uname)\" = \"Linux\" ]; then sudo chown -R vtek:vtek ./.next && sudo chmod -R 755 ./.next; else echo 'Skipping permission changes on non-Linux OS'; fi",
     "prod:start": "pm2 start ecosystem.config.cjs --log './log.txt'",
-    "prod:all": "run-s prod:clean build prod:dk prod:permissions prod:start && sudo env PATH=$PATH:/usr/bin /home/vtek/.nvm/versions/node/v20.15.0/bin/pm2 startup systemd -u vtek --hp /home/vtek && pm2 save",
+    "prod:all": "run-s prod:clean build prod:dk prod:permissions prod:start && if [ \"$(uname)\" = \"Linux\" ]; then sudo env PATH=$PATH:/usr/bin /home/vtek/.nvm/versions/node/v20.15.0/bin/pm2 startup systemd -u vtek --hp /home/vtek && pm2 save; fi",
     "prod": "run-s prod:clean build prod:permissions prod:start",
     "pretty": "prettier -w .",
     "lint": "run-p lint:*",
@@ -39,7 +39,12 @@
     "test:ui": "vitest --ui",
     "e2e": "dotenv -- cross-var playwright test",
     "e2e:ui": "dotenv -- cross-var playwright test --ui",
-    "dk:init": "docker compose up -d && sleep 30 && pnpm db:init",
+    "dk:init": "docker compose up -d && wait-on tcp:5432 && pnpm db:init",
+    "create:domains": "tsx src/server/scripts/create-test-domains.ts",
+    "monitor:indices": "tsx src/server/scripts/index-monitor.ts",
+    "index:check": "tsx src/server/scripts/index-monitor.ts check",
+    "index:stats": "tsx src/server/scripts/index-monitor.ts stats",
+    "index:monitor": "tsx src/server/scripts/index-monitor.ts monitor",
     "dk:start": "docker compose start",
     "dk:stop": "docker compose stop",
     "dk:clear": "docker compose down --volumes",
@@ -187,7 +192,8 @@
     "tsx": "4.7.1",
     "typescript": "5.4.2",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "1.5.0"
+    "vitest": "1.5.0",
+    "wait-on": "^8.0.4"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed/index.ts"
