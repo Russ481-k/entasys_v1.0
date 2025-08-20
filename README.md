@@ -9,6 +9,10 @@
 
 1. 시스템 의존성 설치
     ```jsx
+    # Git 설치 (먼저 설치)
+    sudo apt-get update
+    sudo apt-get install -y git
+    
     # 기본 시스템 의존성 설치
     sudo apt-get update && sudo apt-get install -y \
         build-essential \
