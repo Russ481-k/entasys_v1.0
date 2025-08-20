@@ -21,11 +21,10 @@ class IndexMonitor {
   }
   async getAllIndices() {
     try {
-      const response = await this.opensearch.request({
+      return await this.opensearch.request({
         path: '/_cat/indices?format=json&h=index,health,status,uuid,pri,rep,docs.count,docs.deleted,store.size,pri.store.size',
         method: 'GET',
       });
-      return response;
     } catch (error) {
       console.error('Error getting indices:', error);
       return [];
@@ -34,6 +33,7 @@ class IndexMonitor {
   async getIndexCreationDate(indexName) {
     var _a, _b;
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const response = await this.opensearch.request({
         path: `/${indexName}/_settings`,
         method: 'GET',
@@ -117,7 +117,7 @@ class IndexMonitor {
         const deletePerDomain = Math.ceil(
           300 / Object.keys(domainGroups).length
         );
-        for (const [domain, domainIndices] of Object.entries(domainGroups)) {
+        for (const [, domainIndices] of Object.entries(domainGroups)) {
           const indicesWithDates = await Promise.all(
             domainIndices.map(async (index) =>
               Object.assign(Object.assign({}, index), {

@@ -58,11 +58,20 @@ class IndexMonitor {
 
   async getIndexCreationDate(indexName: string): Promise<Date | null> {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      interface OpenSearchSettingsResponse {
+        [indexName: string]: {
+          settings: {
+            index: {
+              creation_date?: string;
+            };
+          };
+        };
+      }
+
       const response = (await this.opensearch.request({
         path: `/${indexName}/_settings`,
         method: 'GET',
-      })) as any;
+      })) as OpenSearchSettingsResponse;
 
       const settings = response[indexName]?.settings?.index;
       if (settings?.creation_date) {
