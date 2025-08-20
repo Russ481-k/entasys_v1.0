@@ -33,7 +33,6 @@ class IndexMonitor {
   async getIndexCreationDate(indexName) {
     var _a, _b;
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const response = await this.opensearch.request({
         path: `/${indexName}/_settings`,
         method: 'GET',

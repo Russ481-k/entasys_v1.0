@@ -65,6 +65,80 @@ function scheduleCleanup() {
 // 초기 스케줄링 시작
 scheduleCleanup();
 
+function normalizeDomainName(raw: string): {
+  domainKey: string;
+  aliasKey: string;
+} {
+  const trimmed = (raw || '').trim().toLowerCase();
+  const withoutAliasPrefix = trimmed.replace(/^alias_/, '');
+  const domainKey = withoutAliasPrefix
+    .replace(/\./g, '-')
+    .replace(/[^a-z0-9\-]/g, '_')
+    .replace(/-+/g, '-')
+    .replace(/_+/g, '_');
+  const aliasRaw = trimmed.startsWith('alias_')
+    ? trimmed
+    : `alias_${domainKey}`;
+  const aliasKey = aliasRaw
+    .toLowerCase()
+    .replace(/[^a-z0-9\-_]/g, '_')
+    .replace(/-+/g, '-')
+    .replace(/_+/g, '_');
+  return { domainKey, aliasKey };
+}
+
+// 도메인 목록 폴백: DB에 활성 도메인이 없으면 OpenSearch의 alias_*에서 자동 추출
+async function getActiveDomainNamesWithFallback(): Promise<string[]> {
+  // 1) DB에서 활성 도메인 조회
+  const activeDomains = await prisma.domain.findMany({
+    where: { isActive: true },
+    select: { name: true },
+  });
+  let domainNames = activeDomains.map((d) => d.name);
+
+  // 2) 비어 있거나 유효하지 않으면 OpenSearch에서 alias_*로 도메인 자동 수집
+  if (!domainNames.length) {
+    try {
+      const aliases = await makeOpenSearchRequest<Array<{ alias: string }>>(
+        '/_cat/aliases/alias_*?format=json&h=alias',
+        'GET'
+      );
+      const fromAliases = (aliases || [])
+        .map((a) => a.alias)
+        .filter(
+          (a): a is string => typeof a === 'string' && a.startsWith('alias_')
+        )
+        .map((a) => a.replace(/^alias_/, ''));
+      // 중복 제거
+      domainNames = Array.from(new Set(fromAliases));
+    } catch (e) {
+      console.error('Failed to fetch domains from OpenSearch aliases:', e);
+    }
+  }
+
+  // 3) 여전히 비어 있으면 인덱스 목록에서 alias_* 패턴으로 도메인 추출
+  if (!domainNames.length) {
+    try {
+      const indices = await makeOpenSearchRequest<Array<{ index: string }>>(
+        '/_cat/indices/alias_*?format=json&h=index',
+        'GET'
+      );
+      const fromIndices = (indices || [])
+        .map((it) => it.index)
+        .filter(
+          (name): name is string =>
+            typeof name === 'string' && name.startsWith('alias_')
+        )
+        .map((name) => name.replace(/^alias_/, ''));
+      domainNames = Array.from(new Set(fromIndices));
+    } catch (e) {
+      console.error('Failed to fetch domains from OpenSearch indices:', e);
+    }
+  }
+
+  return domainNames;
+}
+
 // 시스템 터링 관련 함수
 async function getDiskUsage(): Promise<{
   total: number;
@@ -349,11 +423,7 @@ export const dashboardRouter = createTRPCRouter({
     .input(z.object({}))
     .output(z.object({ domains: z.array(z.string()) }))
     .query(async () => {
-      const activeDomains = await prisma.domain.findMany({
-        where: { isActive: true },
-        select: { name: true },
-      });
-      const domains = activeDomains.map((domain) => domain.name);
+      const domains = await getActiveDomainNamesWithFallback();
       return { domains };
     }),
   // 시스템 메트릭스 조회
@@ -405,21 +475,54 @@ export const dashboardRouter = createTRPCRouter({
       const currentHour = now.format('YYYY.MM.DD.HH');
 
       // 활성화된 도메인 목록 조회
-      const activeDomains = await prisma.domain.findMany({
-        where: { isActive: true },
-        select: { name: true },
-      });
-      const domainNames = activeDomains.map((domain) => domain.name);
+      const domainNames = await getActiveDomainNamesWithFallback();
+
+      // 도메인 목록이 비어 있으면 alias_* 전체를 대상으로 집계
+      if (!domainNames.length) {
+        const result = await makeOpenSearchRequest<OpenSearchCountResponse>(
+          `/alias_*/_count`,
+          'POST',
+          {
+            query: {
+              range: {
+                '@timestamp': {
+                  gte: oneMinuteAgo.toISOString(),
+                  lt: thirtySecondsAgo.toISOString(),
+                  time_zone: '+09:00',
+                },
+              },
+            },
+          }
+        );
+        return {
+          logs_per_second: Math.round((result.count ?? 0) / 60),
+          logs_per_day:
+            (
+              await makeOpenSearchRequest<OpenSearchCountResponse>(
+                `/alias_*/_count`,
+                'POST',
+                {
+                  query: {
+                    range: {
+                      '@timestamp': {
+                        gte: now.startOf('day').format(),
+                        lte: now.endOf('day').format(),
+                        time_zone: '+09:00',
+                      },
+                    },
+                  },
+                }
+              )
+            ).count ?? 0,
+        };
+      }
 
       // 초당 로그 수 계산
       const logsPerSecondPromises = domainNames.map(async (domain: string) => {
         try {
-          const domainPattern = domain
-            .toLowerCase()
-            .replace(/\./g, '-')
-            .replace(/[^a-z0-9\-]/g, '_');
+          const { domainKey, aliasKey } = normalizeDomainName(domain);
           const result = await makeOpenSearchRequest<OpenSearchCountResponse>(
-            `/${currentHour}*_${domainPattern}/_count`,
+            `/${currentHour}*_${domainKey},${aliasKey}/_count`,
             'POST',
             {
               query: {
@@ -453,11 +556,23 @@ export const dashboardRouter = createTRPCRouter({
       const currentDate = now.format('YYYY.MM.DD');
       const logsPerDayPromises = domainNames.map(async (domain: string) => {
         try {
-          const indices = `${currentDate}*_${domain}`;
+          const { domainKey, aliasKey } = normalizeDomainName(domain);
+          const indices = `${currentDate}*_${domainKey},${aliasKey}`;
 
           const result = await makeOpenSearchRequest<OpenSearchCountResponse>(
             `/${indices}/_count`,
-            'GET'
+            'POST',
+            {
+              query: {
+                range: {
+                  '@timestamp': {
+                    gte: now.startOf('day').format(),
+                    lte: now.endOf('day').format(),
+                    time_zone: '+09:00',
+                  },
+                },
+              },
+            }
           );
           return result.count ?? 0;
         } catch (error) {
@@ -486,12 +601,24 @@ export const dashboardRouter = createTRPCRouter({
 
     const sourceCountrySessions =
       await makeOpenSearchRequest<OpenSearchAggregationResponse>(
-        `/${todayIndexPattern}*/_search`,
+        `/${todayIndexPattern}*,alias_*/_search`,
         'POST',
         {
           size: 0,
           query: {
-            match_all: {},
+            bool: {
+              filter: [
+                {
+                  range: {
+                    '@timestamp': {
+                      gte: now.startOf('day').format(),
+                      lte: now.endOf('day').format(),
+                      time_zone: '+09:00',
+                    },
+                  },
+                },
+              ],
+            },
           },
           aggs: {
             source_country: {
@@ -525,12 +652,24 @@ export const dashboardRouter = createTRPCRouter({
 
     const destinationCountrySessions =
       await makeOpenSearchRequest<OpenSearchAggregationResponse>(
-        `/${todayIndexPattern}*/_search`,
+        `/${todayIndexPattern}*,alias_*/_search`,
         'POST',
         {
           size: 0,
           query: {
-            match_all: {},
+            bool: {
+              filter: [
+                {
+                  range: {
+                    '@timestamp': {
+                      gte: now.startOf('day').format(),
+                      lte: now.endOf('day').format(),
+                      time_zone: '+09:00',
+                    },
+                  },
+                },
+              ],
+            },
           },
           aggs: {
             destination_country: {
@@ -570,7 +709,7 @@ export const dashboardRouter = createTRPCRouter({
       const now = dayjs().tz('Asia/Seoul');
       const response =
         await makeOpenSearchRequest<OpenSearchAggregationResponse>(
-          `/${now.format('YYYY.MM.DD')}*/_search`,
+          `/${now.format('YYYY.MM.DD')}*,alias_*/_search`,
           'POST',
           {
             size: 0,
@@ -624,7 +763,7 @@ export const dashboardRouter = createTRPCRouter({
       const now = dayjs().tz('Asia/Seoul');
       const response =
         await makeOpenSearchRequest<OpenSearchAggregationResponse>(
-          `/${now.format('YYYY.MM')}*/_search`,
+          `/${now.format('YYYY.MM')}*,alias_*/_search`,
           'POST',
           {
             size: 0,
@@ -680,11 +819,7 @@ export const dashboardRouter = createTRPCRouter({
     )
     .query(async () => {
       const now = dayjs().tz('Asia/Seoul');
-      const activeDomains = await prisma.domain.findMany({
-        where: { isActive: true },
-        select: { name: true },
-      });
-      const domainNames = activeDomains.map((domain) => domain.name);
+      const domainNames = await getActiveDomainNamesWithFallback();
 
       const domainMonthlyPromises = domainNames.map(async (domain) => {
         try {
@@ -692,10 +827,22 @@ export const dashboardRouter = createTRPCRouter({
             try {
               const targetMonth = now.subtract(11 - i, 'months');
               const monthPattern = targetMonth.format('YYYY.MM');
+              const { domainKey, aliasKey } = normalizeDomainName(domain);
               const result =
                 await makeOpenSearchRequest<OpenSearchCountResponse>(
-                  `/${monthPattern}*_${domain}*/_count`,
-                  'GET'
+                  `/${monthPattern}*_${domainKey},${aliasKey}/_count`,
+                  'POST',
+                  {
+                    query: {
+                      range: {
+                        '@timestamp': {
+                          gte: targetMonth.startOf('month').format(),
+                          lte: targetMonth.endOf('month').format(),
+                          time_zone: '+09:00',
+                        },
+                      },
+                    },
+                  }
                 );
               return {
                 time: targetMonth.format('YYYY-MM'),
