@@ -28,7 +28,7 @@ class IndexMonitor {
   private prisma: PrismaClient;
   private readonly MAX_INDICES = 2800; // 3000보다 여유있게 설정
   private readonly WARNING_THRESHOLD = 2500;
-  private readonly CLOSE_BATCH_SIZE = 300; // 한 번에 닫을 인덱스 수
+  private readonly CLOSE_BATCH_SIZE = 50; // 한 번에 닫을 인덱스 수 (보수적으로 감소)
 
   constructor() {
     this.opensearch = OpenSearchClient.getInstance();
