@@ -7,6 +7,7 @@ class IndexMonitor {
   constructor() {
     this.MAX_INDICES = 2800; // 3000보다 여유있게 설정
     this.WARNING_THRESHOLD = 2500;
+    this.CLOSE_BATCH_SIZE = 300; // 한 번에 닫을 인덱스 수
     this.opensearch = OpenSearchClient.getInstance();
     this.prisma = new PrismaClient();
   }
@@ -138,6 +139,40 @@ class IndexMonitor {
       },
     };
   }
+  // 오래된 인덱스 우선 닫기(샤드 해제용)
+  async selectOldestOpenIndicesToClose(indices, limit) {
+    const openIndices = indices.filter(
+      (i) => (i.status || '').toLowerCase() === 'open'
+    );
+    const withDates = await Promise.all(
+      openIndices.map(async (index) =>
+        Object.assign(Object.assign({}, index), {
+          creationDate: await this.getIndexCreationDate(index.index),
+        })
+      )
+    );
+    const sorted = withDates
+      .filter((i) => i.creationDate !== null)
+      .sort((a, b) => a.creationDate.getTime() - b.creationDate.getTime());
+    return sorted.slice(0, Math.max(0, limit)).map((i) => i.index);
+  }
+  async closeIndices(indicesToClose) {
+    if (!indicesToClose.length) return;
+    console.log(
+      `🧯 Closing ${indicesToClose.length} indices to free shards...`
+    );
+    for (const indexName of indicesToClose) {
+      try {
+        await this.opensearch.request({
+          path: `/${indexName}/_close`,
+          method: 'POST',
+        });
+        console.log(`✅ Closed index: ${indexName}`);
+      } catch (error) {
+        console.error(`❌ Failed to close index ${indexName}:`, error);
+      }
+    }
+  }
   async deleteIndices(indicesToDelete) {
     console.log(`🗑️  Deleting ${indicesToDelete.length} indices...`);
     for (const indexName of indicesToDelete) {
@@ -160,6 +195,22 @@ class IndexMonitor {
         `🚨 Index count (${indexCount}) exceeded maximum (${this.MAX_INDICES}). Starting cleanup...`
       );
       const allIndices = await this.getAllIndices();
+      // 0) 먼저 오래된 OPEN 인덱스를 닫아 샤드 여유 확보 시도
+      try {
+        const toClose = await this.selectOldestOpenIndicesToClose(
+          allIndices,
+          this.CLOSE_BATCH_SIZE
+        );
+        if (toClose.length) {
+          await this.closeIndices(toClose);
+        } else {
+          console.log(
+            'ℹ️ No open indices eligible for closing. Skipping close step.'
+          );
+        }
+      } catch (error) {
+        console.error('Failed during close step:', error);
+      }
       // 시스템 인덱스 제외 (., security, kibana 등으로 시작하는 인덱스)
       const userIndices = allIndices.filter(
         (index) =>
@@ -266,6 +317,18 @@ if (require.main === module) {
       break;
     case 'stats':
       monitor.getIndexStatistics().then(() => process.exit(0));
+      break;
+    case 'close':
+      (async () => {
+        // 수동 close 전용 명령: 오래된 OPEN 인덱스 일부 닫기
+        const all = await monitor.getAllIndices();
+        const toClose = await monitor.selectOldestOpenIndicesToClose(
+          all,
+          monitor['CLOSE_BATCH_SIZE']
+        );
+        await monitor.closeIndices(toClose);
+        process.exit(0);
+      })();
       break;
     case 'monitor':
       const intervalMinutes = parseInt(process.argv[3] || '10');

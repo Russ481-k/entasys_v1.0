@@ -46,6 +46,7 @@
     "monitor:indices": "tsx src/server/scripts/index-monitor.ts",
     "index:check": "tsx src/server/scripts/index-monitor.ts check",
     "index:stats": "tsx src/server/scripts/index-monitor.ts stats",
+    "index:close": "tsx src/server/scripts/index-monitor.ts close",
     "index:monitor": "tsx src/server/scripts/index-monitor.ts monitor",
     "dk:start": "docker compose start",
     "dk:stop": "docker compose stop",
