@@ -522,22 +522,16 @@ export const dashboardRouter = createTRPCRouter({
         try {
           const { domainKey, aliasKey } = normalizeDomainName(domain);
           const result = await makeOpenSearchRequest<OpenSearchCountResponse>(
-            `/${currentHour}*_${domainKey},${aliasKey}/_count`,
+            `/${aliasKey}/_count`,
             'POST',
             {
               query: {
-                bool: {
-                  must: [
-                    {
-                      range: {
-                        '@timestamp': {
-                          gte: oneMinuteAgo.toISOString(),
-                          lt: thirtySecondsAgo.toISOString(),
-                          time_zone: '+09:00',
-                        },
-                      },
-                    },
-                  ],
+                range: {
+                  '@timestamp': {
+                    gte: oneMinuteAgo.toISOString(),
+                    lt: thirtySecondsAgo.toISOString(),
+                    time_zone: '+09:00',
+                  },
                 },
               },
             }
@@ -557,10 +551,9 @@ export const dashboardRouter = createTRPCRouter({
       const logsPerDayPromises = domainNames.map(async (domain: string) => {
         try {
           const { domainKey, aliasKey } = normalizeDomainName(domain);
-          const indices = `${currentDate}*_${domainKey},${aliasKey}`;
 
           const result = await makeOpenSearchRequest<OpenSearchCountResponse>(
-            `/${indices}/_count`,
+            `/${aliasKey}/_count`,
             'POST',
             {
               query: {
