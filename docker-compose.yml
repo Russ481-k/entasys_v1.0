@@ -26,7 +26,7 @@ services:
       - '-c'
       - 'effective_cache_size=256MB'
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      test: ['CMD-SHELL', 'pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB']
       interval: 5s
       timeout: 5s
       retries: 10
@@ -55,7 +55,7 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_HEAP_OPTS: "-Xms256m -Xmx256m"
+      KAFKA_HEAP_OPTS: '-Xms256m -Xmx256m'
     networks:
       - palolog
 
@@ -88,7 +88,11 @@ services:
         soft: 65536
         hard: 65536
     healthcheck:
-      test: ["CMD-SHELL", "curl -k -s http://localhost:9200/_cluster/health || exit 1"]
+      test:
+        [
+          'CMD-SHELL',
+          'curl -k -s http://localhost:9200/_cluster/health || exit 1',
+        ]
       interval: 30s
       timeout: 30s
       retries: 5
@@ -149,6 +153,24 @@ services:
       - ./logstash/pipeline:/usr/share/logstash/pipeline
     command: logstash -f /usr/share/logstash/pipeline/consumer/consumer.conf --config.reload.automatic
     user: root
+
+  opensearch-bootstrap:
+    image: curlimages/curl:8.5.0
+    container_name: opensearch-bootstrap
+    depends_on:
+      opensearch:
+        condition: service_healthy
+    networks:
+      - palolog
+    entrypoint: ['/bin/sh', '-lc']
+    command: |
+      until curl -sf http://opensearch:9200/_cluster/health; do sleep 3; done;
+      if ! curl -sf http://opensearch:9200/_cat/aliases/alias_gsivs-utm?h=index | grep -q .; then
+        curl -s -X PUT http://opensearch:9200/alias_gsivs-utm-000001 \
+          -H "Content-Type: application/json" \
+          -d '{"aliases":{"alias_gsivs-utm":{"is_write_index":true}}}';
+      fi;
+      exit 0
 
 networks:
   palolog:

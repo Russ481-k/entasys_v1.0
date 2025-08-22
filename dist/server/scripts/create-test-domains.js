@@ -3,18 +3,7 @@ import { PrismaClient } from '@prisma/client';
 
 import { OpenSearchClient } from '../lib/opensearch.js';
 
-const TEST_DOMAINS = [
-  { name: 'seoulfw', description: 'Seoul Office Firewall' },
-  { name: 'busanfw', description: 'Busan Office Firewall' },
-  { name: 'daegufw', description: 'Daegu Branch Firewall' },
-  { name: 'incheonfw', description: 'Incheon HQ Firewall' },
-  { name: 'gwangjufw', description: 'Gwangju Sub Firewall' },
-  { name: 'daejeonfw', description: 'Daejeon Main Firewall' },
-  { name: 'ulsanfw', description: 'Ulsan Plant Firewall' },
-  { name: 'jejufw', description: 'Jeju Branch Firewall' },
-  { name: 'gangwonfw', description: 'Gangwon Office Firewall' },
-  { name: 'chungbukfw', description: 'Chungbuk Department Firewall' },
-];
+const TEST_DOMAINS = [{ name: 'gsivs-utm', description: 'GSIVS UTM Firewall' }];
 async function createTestDomains() {
   const prisma = new PrismaClient();
   const opensearch = OpenSearchClient.getInstance();

@@ -295,3 +295,92 @@
 
 
 postgresql namd username password 변경할 것
+
+
+#  gsivs-utm 인덱스들에 alias_gsivs-utm alias를 하나씩 추가
+for index in $(curl -s 'http://localhost:9200/_cat/indices/*_gsivs-utm*?h=index'); do 
+  echo "Adding alias to $index"
+  curl -X POST "http://localhost:9200/_aliases" -H 'Content-Type: application/json' -d "{\"actions\":[{\"add\":{\"index\":\"$index\",\"alias\":\"alias_gsivs-utm\"}}]}"
+done
+
+### 후속 수정 과정 - 필수 명령어 (필요한 것만)
+
+1) OpenSearch alias/rollover 교정
+
+```bash
+# 잘못된 write_index 해제 (예: 잘못 생성된 gsivs-utm-000001)
+curl -s -u admin:admin -X POST "http://localhost:9200/_aliases" \
+-H "Content-Type: application/json" -d '{
+  "actions":[{"add":{"index":"2025.08.22.22_gsivs-utm-000001","alias":"alias_gsivs-utm","is_write_index":false}}]
+}'
+
+# 올바른 초기 인덱스 생성 + write alias 지정
+curl -s -u admin:admin -X PUT "http://localhost:9200/alias_gsivs-utm-000001" \
+-H "Content-Type: application/json" -d '{
+  "aliases":{"alias_gsivs-utm":{"is_write_index":true}}
+}'
+
+# (필요 시) 최신 인덱스 alias에 추가
+curl -s -u admin:admin -X POST "http://localhost:9200/_aliases" \
+-H "Content-Type: application/json" -d '{
+  "actions":[{"add":{"index":"alias_gsivs-utm_1","alias":"alias_gsivs-utm"}}]
+}'
+
+# 확인
+curl -s -u admin:admin "http://localhost:9200/_cat/aliases/alias_gsivs-utm?v&h=alias,index,is_write_index"
+```
+
+2) 데이터 쓰기/집계 검증
+
+```bash
+# 쓰기 경로 즉시 검증 (probe write)
+curl -s -u admin:admin -X POST "http://localhost:9200/alias_gsivs-utm/_doc" \
+-H "Content-Type: application/json" -d '{"@timestamp":"2025-08-22T14:59:00Z","_probe":"write-test"}'
+
+# 오늘(KST) 일별 카운트(lpd)
+curl -s -u admin:admin -X POST "http://localhost:9200/alias_gsivs-utm/_count" \
+-H "Content-Type: application/json" -d '{
+  "query":{"range":{"@timestamp":{"gte":"now/d","lte":"now/d+1d","time_zone":"+09:00"}}}
+}'
+
+# 최근 2분 유입(lps 확인용)
+curl -s -u admin:admin -X POST "http://localhost:9200/alias_gsivs-utm/_count" \
+-H "Content-Type: application/json" -d '{
+  "query":{"range":{"@timestamp":{"gte":"now-2m","lte":"now"}}}
+}'
+
+# 최근 60분 분단위 히스토그램(유입 단절 시점 확인)
+curl -s -u admin:admin -X POST "http://localhost:9200/alias_gsivs-utm/_search" \
+-H "Content-Type: application/json" -d '{
+  "size":0,
+  "query":{"range":{"@timestamp":{"gte":"now-60m","lte":"now"}}},
+  "aggs":{"per_min":{"date_histogram":{"field":"@timestamp","fixed_interval":"1m"}}}
+}' | jq '.aggregations.per_min.buckets[] | select(.doc_count>0) | {t:.key_as_string,c:.doc_count}'
+```
+
+3) Docker 네트워크/DNS 복구(Logstash → OpenSearch)
+
+```bash
+# 공통 사용자 정의 네트워크 생성 및 두 컨테이너 연결
+docker network create palolog
+docker network connect palolog opensearch
+docker network connect palolog logstash-consumer
+
+# Logstash 재시작
+docker restart logstash-consumer
+```
+
+4) 대시보드 반영(Next.js 서버)
+
+```bash
+# 코드 수정 반영 및 기동(포트 8000)
+npm run build
+NEXT_PORT=8000 npm run start &
+```
+
+
+# 4월 인덱스들 삭제 (vision-fw 도메인 포함)
+for index in $(curl -s 'http://localhost:9200/_cat/indices/2025.04*?h=index'); do
+  echo "Deleting index: $index"
+  curl -X DELETE "http://localhost:9200/$index"
+done

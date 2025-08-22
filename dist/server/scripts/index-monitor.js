@@ -7,7 +7,7 @@ class IndexMonitor {
   constructor() {
     this.MAX_INDICES = 2800; // 3000보다 여유있게 설정
     this.WARNING_THRESHOLD = 2500;
-    this.CLOSE_BATCH_SIZE = 300; // 한 번에 닫을 인덱스 수
+    this.CLOSE_BATCH_SIZE = 50; // 한 번에 닫을 인덱스 수 (보수적으로 감소)
     this.opensearch = OpenSearchClient.getInstance();
     this.prisma = new PrismaClient();
   }
