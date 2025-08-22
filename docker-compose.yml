@@ -155,7 +155,7 @@ services:
     user: root
 
   opensearch-bootstrap:
-    image: curlimages/curl:8.5.0
+    image: opensearchproject/opensearch:2.13.0
     container_name: opensearch-bootstrap
     depends_on:
       opensearch:
