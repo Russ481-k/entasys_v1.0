@@ -19,6 +19,7 @@ import os  # os 모듈 추가
 Variable configurations for multiple domains
 """
 DOMAINS = [
+    {"hostname": "GSIVS-UTM-FW", "domain": ".gsivs-utm"},
     {"hostname": "VISION-SEOUL-FW", "domain": ".seoulfw"},
     {"hostname": "BUSAN-OFFICE-FW", "domain": ".busanfw"},
     {"hostname": "DAEGU-BRANCH-FW", "domain": ".daegufw"},
