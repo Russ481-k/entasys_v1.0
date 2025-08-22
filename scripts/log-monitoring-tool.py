@@ -22,14 +22,14 @@ import psutil
 try:
     import requests
     from kafka import KafkaConsumer
-    from elasticsearch import Elasticsearch
+    from opensearchpy import OpenSearch
     HAS_KAFKA = True
-    HAS_ES = True
+    HAS_OS = True
 except ImportError:
     print("Required packages missing. Install with:")
-    print("pip install requests kafka-python elasticsearch")
+    print("python3 -m pip install requests kafka-python opensearch-py psutil")
     HAS_KAFKA = False
-    HAS_ES = False
+    HAS_OS = False
 
 
 @dataclass
@@ -86,9 +86,10 @@ class LogMonitoringTool:
                 )
                 print("✅ Kafka consumer connected")
                 
-            if HAS_ES and self.config.get('opensearch_enabled', True):
-                self.es_client = Elasticsearch(
-                    [self.config['opensearch_host']],
+            if HAS_OS and self.config.get('opensearch_enabled', True):
+                # OpenSearch 공식 클라이언트 사용 (Elasticsearch 클라이언트의 406 헤더 이슈 방지)
+                self.es_client = OpenSearch(
+                    hosts=[self.config['opensearch_host']],
                     http_auth=(self.config['opensearch_user'], self.config['opensearch_password']),
                     verify_certs=False
                 )

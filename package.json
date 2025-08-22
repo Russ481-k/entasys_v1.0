@@ -26,6 +26,7 @@
     "prod:start": "pm2 start ecosystem.config.cjs --log './log.txt'",
     "prod:all": "run-s prod:clean build prod:dk prod:permissions prod:start && if [ \"$(uname)\" = \"Linux\" ]; then sudo env PATH=$PATH:/usr/bin /home/vtek/.nvm/versions/node/v20.15.0/bin/pm2 startup systemd -u vtek --hp /home/vtek && pm2 save; fi",
     "prod": "run-s prod:clean build prod:permissions prod:start",
+    "prod:restart:others": "docker ps --format '{{.ID}} {{.Names}}' | awk 'index($2,\"opensearch\")==0{print $1}' | xargs -r docker restart",
     "pretty": "prettier -w .",
     "lint": "run-p lint:*",
     "lint:next": "cross-env SKIP_ENV_VALIDATION=true next lint",

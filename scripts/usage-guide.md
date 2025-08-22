@@ -15,15 +15,40 @@ Kafka와 OpenSearch의 데이터 저장 성공률을 추적하는 도구
 
 ## 🚀 빠른 시작
 
+### 사전 준비(최초 1회)
+
+Ubuntu/Debian:
+```bash
+sudo apt-get update
+sudo apt-get install -y python3 python3-pip python3-venv tcpdump iproute2
+
+# (권장) sudo 없이 tcpdump 사용 가능하도록 Capabilities 부여
+sudo setcap cap_net_raw,cap_net_admin+eip $(command -v tcpdump || echo /usr/sbin/tcpdump)
+
+# (선택) 전용 가상환경 생성
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install -U pip setuptools wheel
+```
+
+RHEL/CentOS/Fedora:
+```bash
+sudo dnf install -y python3 python3-pip tcpdump
+sudo setcap cap_net_raw,cap_net_admin+eip $(command -v tcpdump || echo /usr/sbin/tcpdump)
+python3 -m venv .venv && source .venv/bin/activate
+python3 -m pip install -U pip setuptools wheel
+```
+
 ### 필수 패키지 설치
 ```bash
-pip install requests kafka-python elasticsearch psutil
+python3 -m pip install requests kafka-python opensearch-py psutil
 ```
 
 ### 기본 권한 설정
 ```bash
 # tcpdump 실행 권한 (root 또는 sudo 필요)
 sudo chmod +x scripts/*.py
+# (옵션) sudo 없이 tcpdump 사용: 위 setcap 참고
 ```
 
 ## 📊 도구별 사용법
@@ -216,6 +241,26 @@ python3 scripts/mass-log-generator.py burst --total 100000
 ## 🛠️ 문제 해결
 
 ### UDP 패킷 손실이 높은 경우
+# 초기 설치 에러 해결 가이드
+
+다음 증상 발생 시 아래를 순서대로 실행하세요.
+
+- "tcpdump: not found" 또는 도구에서 tcpdump 실행 실패:
+  - Linux 패키지 설치: `sudo apt-get install -y tcpdump` (또는 `sudo dnf install -y tcpdump`)
+  - 권한 문제 시: `sudo`로 실행하거나 `sudo setcap cap_net_raw,cap_net_admin+eip $(command -v tcpdump)` 적용
+
+- `pip: command not found` 또는 `pip3: command not found`:
+  - `sudo apt-get install -y python3-pip` (또는 `sudo dnf install -y python3-pip`)
+  - 이후 항상 `python3 -m pip ...` 형태로 사용 권장
+
+- 가상환경 사용 시 `sudo`와 경로 문제:
+  - tcpdump에 Capabilities를 부여해 sudo 없이 실행하거나
+  - 불가피하게 sudo가 필요하면 환경을 유지: `sudo -E env PATH="$PATH" python3 scripts/udp-packet-analyzer.py`
+
+- Kafka/OpenSearch 접속 실패:
+  - `config.json`의 호스트/계정 정보를 확인하고, 방화벽/도커 네트워크 상태를 점검
+  - OpenSearch 헬스체크: `curl -k -u admin:admin http://localhost:9200/_cluster/health?pretty`
+
 ```bash
 # Logstash UDP 버퍼 크기 증가
 # logstash/pipeline/producer/producer.conf 수정
