@@ -39,9 +39,11 @@ export default function PageProjects() {
   const license = useLicense();
   const cancelSearchMutation = trpc.projects.cancelSearch.useMutation();
 
+  // 기본 조회 종료: 1분 전(색인 refresh_interval 30s 지연 감안)
   const now = dayjs().subtract(1, 'minute').format('YYYY-MM-DD HH:mm:ss');
+  // 기본 조회 시작: 1시간 전 (기존 60초 창은 조용한 1분엔 항상 빈 결과처럼 보였음)
   const beforeMinuteTime = dayjs()
-    .subtract(2, 'minute')
+    .subtract(1, 'hour')
     .format('YYYY-MM-DD HH:mm:ss');
 
   const [menu, setMenu] = useState<MenuType>('TRAFFIC');

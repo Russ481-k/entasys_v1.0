@@ -538,6 +538,23 @@ export class OpenSearchClient {
               return;
             }
             const parsedData = JSON.parse(data);
+            // 부분 샤드 실패(HTTP 200이지만 일부 샤드 실패)를 조용히 넘기지 않고 경고로 노출한다.
+            // 이런 실패는 정렬/필터 매핑 문제나 잘못된 인덱스 대상에서 발생하며 결과를 불완전하게 만든다.
+            const shards = (
+              parsedData as {
+                _shards?: { failed?: number; failures?: unknown[] };
+              }
+            )?._shards;
+            if (
+              shards &&
+              typeof shards.failed === 'number' &&
+              shards.failed > 0
+            ) {
+              this.logError(`${method} ${path} partial shard failure`, {
+                message: `${shards.failed} shard(s) failed`,
+                failures: shards.failures,
+              });
+            }
             this.logOperation(`${method} ${path} completed`, {
               duration: `${duration}ms`,
               statusCode: res.statusCode,
@@ -797,7 +814,6 @@ export class OpenSearchClient {
     domainName: string
   ): Promise<OpenSearchActionResponse> {
     const templateName = `template_${domainName.toLowerCase()}`;
-    const aliasName = `alias_${domainName.toLowerCase()}`;
 
     // Generate a unique priority based on domain name hash
     const priority =
@@ -807,7 +823,12 @@ export class OpenSearchClient {
         }, 0)
       ) % 1000; // Ensure priority is between 0 and 999
 
-    // Create index template
+    // 시간별 날짜 기반 인덱스(`YYYY.MM.DD.HH_<domain>`)에 적용되는 템플릿.
+    // 롤오버(ISM)/write-alias를 사용하지 않는다 — 시간 단위 회전이 곧 인덱스 분할이며,
+    // 단일 무한 인덱스로 인한 Lucene 문서 상한(2,147,483,519 docs/shard) 도달을 원천 차단한다.
+    // (과거 이 메서드는 `alias_<domain>` write-alias + `-000001` 초기 인덱스 + rollover ISM을
+    //  생성했는데, 이것이 2026-07 적재 중단 장애의 근본 원인이었으므로 제거함.)
+    // 또한 매핑을 명시해 시간별 인덱스 간 동적매핑 드리프트(정렬/필터 오류)를 예방한다.
     const templateResult = await this.request<OpenSearchActionResponse>({
       path: `/_index_template/${templateName}`,
       method: 'PUT',
@@ -819,36 +840,42 @@ export class OpenSearchClient {
             number_of_shards: 1,
             number_of_replicas: 0,
             refresh_interval: '30s',
-            'plugins.index_state_management.policy_id': 'logs_policy',
-            'plugins.index_state_management.rollover_alias': aliasName,
+          },
+          mappings: {
+            date_detection: false,
+            dynamic_templates: [
+              {
+                strings_as_text_keyword: {
+                  match_mapping_type: 'string',
+                  mapping: {
+                    type: 'text',
+                    fields: {
+                      keyword: { type: 'keyword', ignore_above: 256 },
+                    },
+                  },
+                },
+              },
+            ],
+            properties: {
+              '@timestamp': { type: 'date' },
+              sourcePort: { type: 'long' },
+              destinationPort: { type: 'long' },
+              natSourcePort: { type: 'long' },
+              natDestinationPort: { type: 'long' },
+              bytes: { type: 'long' },
+              bytesSent: { type: 'long' },
+              bytesReceived: { type: 'long' },
+              packets: { type: 'long' },
+              packetsSent: { type: 'long' },
+              packetsReceived: { type: 'long' },
+              elapsedTimeSec: { type: 'long' },
+              sequenceNumber: { type: 'long' },
+              severity: { type: 'long' },
+            },
           },
         },
       },
     });
-
-    // Create initial index and alias for rollover
-    try {
-      const initialIndexName = `${new Date().toISOString().slice(0, 13).replace(/[-T]/g, '.').replace(':', '')}_${domainName.toLowerCase()}-000001`;
-
-      await this.request({
-        path: `/${initialIndexName}`,
-        method: 'PUT',
-        body: {
-          aliases: {
-            [aliasName]: {
-              is_write_index: true,
-            },
-          },
-        },
-      });
-
-      this.logOperation(
-        `Initial index and alias created: ${initialIndexName} -> ${aliasName}`
-      );
-    } catch (error) {
-      // Alias might already exist, which is fine
-      this.logOperation(`Alias ${aliasName} might already exist: ${error}`);
-    }
 
     return templateResult;
   }

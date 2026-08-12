@@ -131,7 +131,7 @@ export async function searchOpenSearchWithScroll({
 
     // 모든 인덱스의 총 문서 수를 가져오는 쿼리
     const countQuery = {
-      index: '*', // 모든 인덱스 대상
+      index: '*,-.*', // 로그 인덱스 대상 (시스템 dot-인덱스 제외: @timestamp 없는 .opensearch-*/.plugins-* 로 인한 샤드 부분 실패 방지)
       body: {
         query: {
           bool: {
@@ -163,7 +163,7 @@ export async function searchOpenSearchWithScroll({
     const totalCount = countResult.count || 0;
 
     const result = await client.scrollWithPagination({
-      index: '*',
+      index: '*,-.*', // 로그 인덱스 대상 (시스템 dot-인덱스 제외)
       body: modifiedSearchBody,
       page: currentPage,
       pageSize: limit,
